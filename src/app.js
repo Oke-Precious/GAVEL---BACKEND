@@ -63,7 +63,7 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/api/v1', v1Routes);
 
 // Handle undefined routes
-app.all('*', (req, res, next) => {
+app.use((req, res, next) => {
   return sendError(res, 404, `Can't find ${req.originalUrl} on this server!`);
 });
 
