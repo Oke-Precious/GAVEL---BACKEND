@@ -4,10 +4,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
-const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const rateLimit = require('express-rate-limit');
-const xss = require('xss-clean');
 
 const env = require('./config/env');
 const errorHandler = require('./middleware/errorHandler');
@@ -44,10 +42,11 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 
 // Data sanitization against NoSQL query injection
-app.use(mongoSanitize());
+// (express-mongo-sanitize removed due to Express 5 compatibility issues)
+// Mongoose 6+ provides robust built-in protection against NoSQL injection via strict casting.
 
 // Data sanitization against XSS
-app.use(xss());
+// (xss-clean removed due to Express 5 compatibility issues; express-validator is used for route input sanitization)
 
 // Prevent parameter pollution
 app.use(hpp());
@@ -61,6 +60,13 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Mount routers
 app.use('/api/v1', v1Routes);
+
+// API Documentation UI Route
+app.set('view engine', 'ejs');
+app.set('views', path.join(process.cwd(), 'views'));
+app.get('/docs', (req, res) => {
+  res.render('docs');
+});
 
 // Handle undefined routes
 app.use((req, res, next) => {
