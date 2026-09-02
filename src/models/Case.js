@@ -47,6 +47,14 @@ const caseSchema = new mongoose.Schema({
     type: String, // Or could be a ref to a Court model
     trim: true,
   },
+  isProBono: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
+  detentionDate: {
+    type: Date,
+  },
   filingDate: {
     type: Date,
     default: Date.now,
