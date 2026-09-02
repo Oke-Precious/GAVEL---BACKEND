@@ -55,6 +55,10 @@ app.use(hpp());
 // Compress responses
 app.use(compression());
 
+// Serve static files for uploaded documents
+const path = require('path');
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 // Mount routers
 app.use('/api/v1', v1Routes);
 
