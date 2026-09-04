@@ -8,7 +8,7 @@
     <style>
         :root {
             --bg-color: #0f172a;
-            --sidebar-bg: rgba(30, 41, 59, 0.7);
+            --sidebar-bg: rgba(30, 41, 59, 0.75);
             --card-bg: rgba(30, 41, 59, 0.5);
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
@@ -67,7 +67,7 @@
         }
 
         .sidebar li {
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
         }
 
         .sidebar a {
@@ -76,8 +76,9 @@
             font-weight: 500;
             transition: all 0.2s;
             display: block;
-            padding: 0.5rem;
+            padding: 0.5rem 0.75rem;
             border-radius: 6px;
+            font-size: 0.9rem;
         }
 
         .sidebar a:hover {
@@ -95,8 +96,8 @@
         }
 
         .content h2 {
-            font-size: 2rem;
-            margin-bottom: 1.5rem;
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
             padding-bottom: 0.5rem;
             border-bottom: 1px solid var(--border);
             margin-top: 3rem;
@@ -126,19 +127,20 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 1rem;
+            margin-top: 0.5rem;
         }
 
         th, td {
-            padding: 1rem;
+            padding: 0.85rem 1rem;
             text-align: left;
             border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
         }
 
         th {
             color: var(--text-muted);
             font-weight: 600;
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
@@ -149,18 +151,18 @@
 
         /* Method Badges */
         .method {
-            padding: 0.25rem 0.75rem;
+            padding: 0.2rem 0.6rem;
             border-radius: 9999px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 700;
             text-transform: uppercase;
             display: inline-block;
         }
 
-        .method.get { background: rgba(16, 185, 129, 0.1); color: var(--get-color); border: 1px solid rgba(16, 185, 129, 0.2); }
-        .method.post { background: rgba(59, 130, 246, 0.1); color: var(--post-color); border: 1px solid rgba(59, 130, 246, 0.2); }
-        .method.patch { background: rgba(245, 158, 11, 0.1); color: var(--patch-color); border: 1px solid rgba(245, 158, 11, 0.2); }
-        .method.delete { background: rgba(239, 68, 68, 0.1); color: var(--delete-color); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .method.get { background: rgba(16, 185, 129, 0.15); color: var(--get-color); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .method.post { background: rgba(59, 130, 246, 0.15); color: var(--post-color); border: 1px solid rgba(59, 130, 246, 0.3); }
+        .method.patch { background: rgba(245, 158, 11, 0.15); color: var(--patch-color); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .method.delete { background: rgba(239, 68, 68, 0.15); color: var(--delete-color); border: 1px solid rgba(239, 68, 68, 0.3); }
 
         /* Code blocks */
         code {
@@ -168,13 +170,13 @@
             background: rgba(0,0,0,0.3);
             padding: 0.2rem 0.4rem;
             border-radius: 4px;
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             color: #cbd5e1;
         }
 
         pre {
             background: rgba(0,0,0,0.4);
-            padding: 1.5rem;
+            padding: 1.25rem;
             border-radius: 8px;
             overflow-x: auto;
             border: 1px solid var(--border);
@@ -190,12 +192,11 @@
         /* Responsive */
         @media (max-width: 768px) {
             .sidebar {
-                transform: translateX(-100%);
-                z-index: 50;
+                display: none;
             }
             .content {
                 margin-left: 0;
-                padding: 2rem;
+                padding: 1.5rem;
             }
             table, thead, tbody, th, td, tr {
                 display: block;
@@ -204,7 +205,7 @@
             td {
                 display: flex;
                 flex-direction: column;
-                padding: 0.75rem 0;
+                padding: 0.5rem 0;
             }
             td::before {
                 content: attr(data-label);
@@ -225,78 +226,182 @@
             <li><a href="#auth">1. Auth Module</a></li>
             <li><a href="#cases">2. Cases Module</a></li>
             <li><a href="#documents">3. Documents</a></li>
-            <li><a href="#public">4. Public</a></li>
+            <li><a href="#public">4. Public Data</a></li>
             <li><a href="#watch">5. Watch Subscriptions</a></li>
             <li><a href="#pro-bono">6. Pro-Bono</a></li>
             <li><a href="#analytics">7. Admin Analytics</a></li>
             <li><a href="#users">8. User Management</a></li>
             <li><a href="#health">9. System Health</a></li>
+            <li><a href="#response">Response Format</a></li>
         </ul>
     </nav>
 
     <main class="content">
         <section id="intro">
             <h2>GAVEL API Reference</h2>
-            <p>Welcome to the GAVEL frontend developer API reference. Base URL for all endpoints is <code>http://localhost:1940/api/v1</code>.</p>
+            <p>Welcome to the GAVEL API Reference. Base URL for all endpoints is <code>http://localhost:5000/api/v1</code> (or your deployed server domain).</p>
             
             <div class="endpoint-group">
-                <h3>🔒 Authentication & Authorization</h3>
-                <p style="margin-top: 1rem;">
-                    <strong>JWT Cookies:</strong> The API uses HTTP-Only cookies. When logged in, you receive <code>jwt</code> and <code>jwt-refresh</code> cookies.<br><br>
-                    <strong>Axios Setup:</strong> You MUST include <code>withCredentials: true</code> in your Axios config to send cookies.<br><br>
-                    <strong>Roles:</strong> admin, judge, lawyer, clerk, litigant, public.
+                <h3 style="margin-bottom: 0.5rem;">🔒 Authentication & Authorization</h3>
+                <p style="margin-bottom: 0;">
+                    <strong>JWT Tokens:</strong> The API uses JWT Access Tokens (Header <code>Authorization: Bearer &lt;token&gt;</code>) and HTTP-Only cookies.<br>
+                    <strong>Axios Setup:</strong> Ensure <code>withCredentials: true</code> is configured in Axios.<br>
+                    <strong>User Roles:</strong> <code>admin</code>, <code>judge</code>, <code>lawyer</code>, <code>clerk</code>, <code>litigant</code>, <code>public</code>.
                 </p>
             </div>
         </section>
 
         <section id="auth">
-            <h2>1. Auth Module</h2>
+            <h2>1. Auth Module (`/auth`)</h2>
             <div class="endpoint-group">
                 <table>
                     <thead>
                         <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Body</th><th>Description</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/register</code></td><td>No</td><td><code>{ firstName, lastName, email, password }</code></td><td>Registers a user.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/login</code></td><td>No</td><td><code>{ email, password }</code></td><td>Authenticates & sets HTTP-Only cookies.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/logout</code></td><td>Yes</td><td>-</td><td>Clears JWT cookies.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/refresh-token</code></td><td>No</td><td>-</td><td>Uses refresh cookie to issue a new access token.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/auth/me</code></td><td>Yes</td><td>-</td><td>Returns authenticated user's details.</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/register</code></td><td>No</td><td><code>{ firstName, lastName, email, password, role }</code></td><td>Register user (default: public).</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/login</code></td><td>No</td><td><code>{ email, password }</code></td><td>Authenticates user and returns JWT.</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/logout</code></td><td>Yes</td><td>-</td><td>Clears JWT authentication.</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/refresh-token</code></td><td>No</td><td>-</td><td>Issues a new access token using refresh token.</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/auth/me</code></td><td>Yes</td><td>-</td><td>Returns logged-in user profile.</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/forgot-password</code></td><td>No</td><td><code>{ email }</code></td><td>Triggers password reset link via email.</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/reset-password/:token</code></td><td>No</td><td><code>{ password }</code></td><td>Resets password with reset token.</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/auth/verify-email/:token</code></td><td>No</td><td>-</td><td>Verifies user email address.</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/resend-verification</code></td><td>No</td><td><code>{ email }</code></td><td>Resends a new verification link.</td></tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
         <section id="cases">
-            <h2>2. Cases Module</h2>
+            <h2>2. Cases Module (`/cases`)</h2>
             <div class="endpoint-group">
                 <table>
                     <thead>
                         <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Body / Query</th><th>Description</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases</code></td><td>Yes</td><td><code>?page=1&limit=10</code></td><td>Paginated list. Filtered by user role.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/cases</code></td><td>Yes (Admin)</td><td><code>{ title, description, court... }</code></td><td>Creates a case.</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases</code></td><td>Yes</td><td><code>?page=1&limit=10&status=Active</code></td><td>Paginated list. Filtered by role.</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/cases</code></td><td>Admin / Clerk</td><td><code>{ caseNumber, title, stage, status... }</code></td><td>Creates a new case.</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases/export</code></td><td>Admin / Judge</td><td><code>?format=pdf&caseId=...</code></td><td>Export cases (CSV or PDF).</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/cases/bulk-import</code></td><td>Admin / Clerk</td><td><code>FormData: { file: File }</code></td><td>Bulk upload cases via CSV file.</td></tr>
                         <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases/:id</code></td><td>Yes</td><td>-</td><td>Full case details (populates lawyers/judges).</td></tr>
-                        <tr><td data-label="Method"><span class="method patch">PATCH</span></td><td><code>/cases/:id</code></td><td>Yes</td><td><code>{ title, description... }</code></td><td>Updates case info.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/cases/:id/status</code></td><td>Yes</td><td><code>{ stage, status, stallReason }</code></td><td>Updates status & creates audit log.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases/export</code></td><td>Yes</td><td><code>?format=pdf&caseId=...</code></td><td>Downloads cases as CSV or PDF.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases/:id/qr-slip</code></td><td>Yes</td><td>-</td><td>Returns Base64 QR Code image.</td></tr>
+                        <tr><td data-label="Method"><span class="method patch">PATCH</span></td><td><code>/cases/:id</code></td><td>Admin / Clerk / Judge</td><td><code>{ title, description... }</code></td><td>Updates case details.</td></tr>
+                        <tr><td data-label="Method"><span class="method delete">DELETE</span></td><td><code>/cases/:id</code></td><td>Admin</td><td>-</td><td>Deletes a case and audit logs.</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/cases/:id/status</code></td><td>Admin / Clerk / Judge</td><td><code>{ stage, status, stallReason, comments }</code></td><td>Updates status & creates audit log.</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases/:id/audit-log</code></td><td>Yes</td><td>-</td><td>Retrieves audit log history.</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases/:id/qr-slip</code></td><td>Yes</td><td>-</td><td>Generates Base64 QR Code image.</td></tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <!-- Continue adding other sections dynamically as needed, shortening for brevity but maintaining quality -->
-        <section id="public">
-            <h2>4. Public Data (Sanitized)</h2>
-            <p>No authentication required. PII is strictly stripped.</p>
+        <section id="documents">
+            <h2>3. Documents Module (`/documents`)</h2>
             <div class="endpoint-group">
                 <table>
+                    <thead>
+                        <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Body</th><th>Description</th></tr>
+                    </thead>
                     <tbody>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/public/cases/:hashId</code></td><td>Sanitized case view.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/public/scorecard</code></td><td>System aggregates (Active, Resolved).</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/public/trends</code></td><td>Time-series filing data.</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases/:id/documents</code></td><td>Yes</td><td>-</td><td>Fetches all documents attached to a case.</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/cases/:id/documents</code></td><td>Admin / Clerk / Lawyer</td><td><code>FormData: { file: File, description }</code></td><td>Uploads file attachment to case.</td></tr>
+                        <tr><td data-label="Method"><span class="method delete">DELETE</span></td><td><code>/documents/:id</code></td><td>Yes</td><td>-</td><td>Deletes document record and file.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="public">
+            <h2>4. Public Data (`/public`)</h2>
+            <div class="endpoint-group">
+                <table>
+                    <thead>
+                        <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/public/cases/:caseHashId</code></td><td>No</td><td>Fetches sanitized public case (PII stripped).</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/public/scorecard</code></td><td>No</td><td>System aggregates (Active, Resolved cases).</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/public/backlog-map</code></td><td>No</td><td>Active/Stalled cases grouped by court.</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/public/trends</code></td><td>No</td><td>Time-series case filing trends.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="watch">
+            <h2>5. Watch Subscriptions (`/watch`)</h2>
+            <div class="endpoint-group">
+                <table>
+                    <thead>
+                        <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Body</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/watch/:caseHashId</code></td><td>No</td><td><code>{ email }</code></td><td>Subscribe email to case updates.</td></tr>
+                        <tr><td data-label="Method"><span class="method delete">DELETE</span></td><td><code>/watch/:idOrToken</code></td><td>No</td><td>-</td><td>Unsubscribe using token/ID.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="pro-bono">
+            <h2>6. Pro-Bono Module (`/pro-bono`)</h2>
+            <div class="endpoint-group">
+                <table>
+                    <thead>
+                        <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/pro-bono/cases</code></td><td>Lawyer Only</td><td>Fetches unrepresented pro-bono cases.</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/pro-bono/cases/:id/claim</code></td><td>Lawyer Only</td><td>Claims an unrepresented case.</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/pro-bono/my-claimed</code></td><td>Lawyer Only</td><td>Fetches pro-bono cases claimed by current lawyer.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="analytics">
+            <h2>7. Admin Analytics (`/analytics`)</h2>
+            <div class="endpoint-group">
+                <table>
+                    <thead>
+                        <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/analytics/overview</code></td><td>Admin Only</td><td>High-level system metrics & counts.</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/analytics/heatmap</code></td><td>Admin Only</td><td>Identifies court/stage congestion bottlenecks.</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/analytics/trends</code></td><td>Admin Only</td><td>Month-over-month case status audit analytics.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="users">
+            <h2>8. User Management (`/users`)</h2>
+            <div class="endpoint-group">
+                <table>
+                    <thead>
+                        <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Body</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/users</code></td><td>Admin Only</td><td><code>?role=lawyer&page=1&limit=20</code></td><td>Fetches paginated list of all users.</td></tr>
+                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/users/invite</code></td><td>Admin Only</td><td><code>{ email, firstName, lastName, role }</code></td><td>Invites user & generates temp password.</td></tr>
+                        <tr><td data-label="Method"><span class="method patch">PATCH</span></td><td><code>/users/:id</code></td><td>Admin Only</td><td><code>{ role, firstName, lastName... }</code></td><td>Updates user profile or role.</td></tr>
+                        <tr><td data-label="Method"><span class="method delete">DELETE</span></td><td><code>/users/:id</code></td><td>Admin Only</td><td>-</td><td>Permanently deletes a user.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="health">
+            <h2>9. System Health (`/health`)</h2>
+            <div class="endpoint-group">
+                <table>
+                    <thead>
+                        <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/health</code></td><td>No</td><td>Health check returning <code>{ status: 'UP' }</code>.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -304,13 +409,22 @@
 
         <section id="response">
             <h2>Standard Response Format</h2>
-            <pre><code>{
+            <pre><code>// Success Response (2xx)
+{
   "success": true,
   "message": "Operation successful",
   "data": { ... }
+}
+
+// Error Response (4xx / 5xx)
+{
+  "success": false,
+  "message": "Error description",
+  "error": "Detailed error (dev mode only)"
 }</code></pre>
         </section>
 
     </main>
 </body>
 </html>
+

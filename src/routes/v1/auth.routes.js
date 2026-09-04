@@ -8,8 +8,10 @@ const {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  resendVerificationEmail,
   refreshToken
 } = require('../../controllers/authController');
+
 const { protect } = require('../../middleware/auth');
 const validate = require('../../middleware/validate');
 
@@ -55,5 +57,6 @@ router.get('/me', protect, getMe);
 router.post('/forgot-password', forgotPasswordValidation, validate, forgotPassword);
 router.post('/reset-password/:token', resetPasswordValidation, validate, resetPassword);
 router.get('/verify-email/:token', verifyEmail);
+router.post('/resend-verification', forgotPasswordValidation, validate, resendVerificationEmail);
 
 module.exports = router;

@@ -68,6 +68,11 @@ app.get('/docs', (req, res) => {
   res.render('docs');
 });
 
+// Shortcut alias for verification link directly accessed on root domain
+app.get('/verify-email/:token', (req, res) => {
+  res.redirect(`/api/v1/auth/verify-email/${req.params.token}`);
+});
+
 // Handle undefined routes
 app.use((req, res, next) => {
   return sendError(res, 404, `Can't find ${req.originalUrl} on this server!`);

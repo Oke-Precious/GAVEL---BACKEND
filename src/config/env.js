@@ -11,6 +11,7 @@ module.exports = {
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
+  BACKEND_URL: process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`,
   
   EMAIL_SERVICE: process.env.EMAIL_SERVICE,
   EMAIL_HOST: process.env.EMAIL_HOST,

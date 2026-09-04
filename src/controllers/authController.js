@@ -286,3 +286,37 @@ exports.verifyEmail = asyncHandler(async (req, res) => {
 
   sendSuccess(res, 200, 'Email verified successfully. You can now login.');
 });
+
+/**
+ * @desc    Resend email verification link
+ * @route   POST /api/v1/auth/resend-verification
+ * @access  Public
+ */
+exports.resendVerificationEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return sendError(res, 400, 'Please provide an email address');
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return sendError(res, 404, 'No user found with that email address');
+  }
+
+  if (user.isEmailVerified) {
+    return sendError(res, 400, 'This email address is already verified');
+  }
+
+  // Generate new verification token
+  const verificationToken = user.createEmailVerificationToken();
+  await user.save({ validateBeforeSave: false });
+
+  try {
+    await emailService.sendVerificationEmail(user, verificationToken);
+    sendSuccess(res, 200, 'Verification email resent successfully. Please check your inbox.');
+  } catch (error) {
+    return sendError(res, 500, 'Could not send verification email. Please try again later.');
+  }
+});

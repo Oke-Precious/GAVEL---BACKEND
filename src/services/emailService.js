@@ -58,7 +58,7 @@ class EmailService {
    * @param {string} token - Raw unhashed verification token
    */
   async sendVerificationEmail(user, token) {
-    const verificationUrl = `${env.CLIENT_URL}/verify-email/${token}`;
+    const verificationUrl = `${env.BACKEND_URL}/api/v1/auth/verify-email/${token}`;
     
     const subject = 'GAVEL - Verify Your Email Address';
     const text = `Hello ${user.firstName},\n\nPlease verify your email address by clicking on the following link or pasting it into your browser:\n\n${verificationUrl}\n\nIf you did not request this, please ignore this email.`;

@@ -113,6 +113,19 @@ exports.deleteUser = asyncHandler(async (req, res) => {
     return sendError(res, 404, 'User not found');
   }
 
+  // Safety Safeguard 1: Prevent self-deletion
+  if (user._id.toString() === req.user._id.toString()) {
+    return sendError(res, 400, 'You cannot delete your own administrator account');
+  }
+
+  // Safety Safeguard 2: Prevent deleting the last remaining admin
+  if (user.role === 'admin') {
+    const adminCount = await User.countDocuments({ role: 'admin' });
+    if (adminCount <= 1) {
+      return sendError(res, 400, 'Cannot delete the last remaining administrator account in the system');
+    }
+  }
+
   await user.deleteOne();
 
   sendSuccess(res, 200, 'User deleted successfully');

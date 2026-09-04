@@ -14,14 +14,14 @@ exports.protect = asyncHandler(async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   } 
-  // Alternatively, extract from cookie
-  else if (req.cookies && req.cookies.token) {
-    token = req.cookies.token;
+  // Alternatively, extract from cookies (supporting token, accessToken, or jwt)
+  else if (req.cookies) {
+    token = req.cookies.token || req.cookies.accessToken || req.cookies.jwt;
   }
 
   // Make sure token exists
   if (!token) {
-    return sendError(res, 401, 'Not authorized to access this route');
+    return sendError(res, 401, 'Not authorized to access this route. No token provided in headers or cookies.');
   }
 
   try {
@@ -42,7 +42,10 @@ exports.protect = asyncHandler(async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    return sendError(res, 401, 'Not authorized to access this route');
+    if (error.name === 'TokenExpiredError') {
+      return sendError(res, 401, 'Your access token has expired. Please refresh your token or log in again.');
+    }
+    return sendError(res, 401, 'Not authorized to access this route. Invalid token.');
   }
 });
 
