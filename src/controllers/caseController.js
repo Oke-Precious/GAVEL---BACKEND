@@ -177,30 +177,42 @@ exports.bulkImport = asyncHandler(async (req, res) => {
   }
 
   const csvString = req.file.buffer.toString('utf-8');
-  const rows = csvString.split('\n').map(row => row.trim()).filter(row => row.length > 0);
+  // Helper to parse CSV line supporting quotes
+  const parseCSVLine = (line) => {
+    const regex = /(?:^|,)(?:"([^"]*)"|([^",]*))/g;
+    const values = [];
+    let match;
+    while ((match = regex.exec(line)) !== null) {
+      if (match.index === regex.lastIndex) regex.lastIndex++;
+      values.push((match[1] !== undefined ? match[1] : match[2] || '').trim());
+    }
+    return values;
+  };
+
+  const lines = csvString.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
   
-  if (rows.length < 2) {
+  if (lines.length < 2) {
     return sendError(res, 400, 'CSV file is empty or missing headers');
   }
 
-  const headers = rows[0].split(',').map(h => h.trim());
+  const headers = parseCSVLine(lines[0]);
   const casesToInsert = [];
   
   let successCount = 0;
   let failedCount = 0;
   const errors = [];
 
-  for (let i = 1; i < rows.length; i++) {
-    const values = rows[i].split(',').map(v => v.trim());
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseCSVLine(lines[i]);
     const caseObj = {};
     
     headers.forEach((header, index) => {
-      // Basic assignment, assuming headers match schema exactly for this simple native parser
-      caseObj[header] = values[index];
+      if (header && values[index] !== undefined) {
+        caseObj[header] = values[index];
+      }
     });
 
     try {
-      // Very basic validation simulation
       if (!caseObj.caseNumber || !caseObj.title) {
         throw new Error('Missing required fields: caseNumber or title');
       }

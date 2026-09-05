@@ -22,6 +22,10 @@ exports.getPublicCase = asyncHandler(async (req, res) => {
     return sendError(res, 404, 'Case not found');
   }
 
+  // Ensure no populated PII (lawyers/judge) is accidentally included from pre-find hooks
+  delete caseData.lawyers;
+  delete caseData.judge;
+
   sendSuccess(res, 200, 'Case retrieved successfully', { case: caseData });
 });
 

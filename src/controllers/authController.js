@@ -284,6 +284,11 @@ exports.verifyEmail = asyncHandler(async (req, res) => {
   user.emailVerificationExpires = undefined;
   await user.save({ validateBeforeSave: false });
 
+  // If request accepts HTML (browser click), redirect to frontend login page
+  if (req.accepts('html')) {
+    return res.redirect(`${env.CLIENT_URL}/login?verified=true`);
+  }
+
   sendSuccess(res, 200, 'Email verified successfully. You can now login.');
 });
 

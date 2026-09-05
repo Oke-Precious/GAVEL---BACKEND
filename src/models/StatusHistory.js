@@ -39,12 +39,11 @@ const statusHistorySchema = new mongoose.Schema({
 });
 
 // Populate user info on find
-statusHistorySchema.pre(/^find/, function(next) {
+statusHistorySchema.pre(/^find/, function() {
   this.populate({
     path: 'changedBy',
     select: 'firstName lastName role'
   });
-  next();
 });
 
 module.exports = mongoose.model('StatusHistory', statusHistorySchema);

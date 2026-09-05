@@ -41,12 +41,11 @@ const caseDocumentSchema = new mongoose.Schema({
 });
 
 // Populate user info on find
-caseDocumentSchema.pre(/^find/, function(next) {
+caseDocumentSchema.pre(/^find/, function() {
   this.populate({
     path: 'uploadedBy',
     select: 'firstName lastName role email'
   });
-  next();
 });
 
 module.exports = mongoose.model('CaseDocument', caseDocumentSchema);

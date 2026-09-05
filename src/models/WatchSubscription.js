@@ -35,11 +35,10 @@ const watchSubscriptionSchema = new mongoose.Schema({
 watchSubscriptionSchema.index({ caseId: 1, email: 1 }, { unique: true });
 
 // Auto-generate unsubscribe token before saving
-watchSubscriptionSchema.pre('save', function(next) {
+watchSubscriptionSchema.pre('save', function() {
   if (!this.unsubscribeToken) {
     this.unsubscribeToken = crypto.randomBytes(32).toString('hex');
   }
-  next();
 });
 
 module.exports = mongoose.model('WatchSubscription', watchSubscriptionSchema);

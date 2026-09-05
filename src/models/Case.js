@@ -71,15 +71,14 @@ const caseSchema = new mongoose.Schema({
 });
 
 // Auto-generate hashId before saving if not present
-caseSchema.pre('save', function(next) {
+caseSchema.pre('save', function() {
   if (!this.hashId) {
     this.hashId = generateCaseHashId();
   }
-  next();
 });
 
 // Populate lawyers and judge by default on find queries
-caseSchema.pre(/^find/, function(next) {
+caseSchema.pre(/^find/, function() {
   this.populate({
     path: 'lawyers',
     select: 'firstName lastName email barNumber'
@@ -87,7 +86,6 @@ caseSchema.pre(/^find/, function(next) {
     path: 'judge',
     select: 'firstName lastName email'
   });
-  next();
 });
 
 module.exports = mongoose.model('Case', caseSchema);
