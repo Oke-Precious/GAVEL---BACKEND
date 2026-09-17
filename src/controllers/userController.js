@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const UserAuditLog = require('../models/UserAuditLog');
+const Case = require('../models/Case');
 const crypto = require('crypto');
 const emailService = require('../services/emailService');
 const asyncHandler = require('../utils/asyncHandler');
@@ -102,31 +104,99 @@ exports.updateUser = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Delete a user
- * @route   DELETE /api/v1/users/:id
+ * @desc    Suspend a user
+ * @route   PATCH /api/v1/users/:id/suspend
  * @access  Private (Admin)
  */
-exports.deleteUser = asyncHandler(async (req, res) => {
+exports.suspendUser = asyncHandler(async (req, res) => {
+  const targetUserId = req.params.id;
+
+  // Reject if admin tries to suspend themselves
+  if (req.user._id.toString() === targetUserId || req.user.id === targetUserId) {
+    return sendError(res, 400, 'An administrator cannot suspend their own account');
+  }
+
+  const user = await User.findById(targetUserId);
+  if (!user) {
+    return sendError(res, 404, 'User not found');
+  }
+
+  // Count active non-compliant/unclosed cases assigned to user
+  const activeCasesCount = await Case.countDocuments({
+    $or: [
+      { lawyers: user._id },
+      { judge: user._id },
+      { assignedOfficer: user._id },
+      { userId: user._id }
+    ],
+    alertLevel: { $ne: 'compliant' },
+    lifecycleStage: { $ne: 'trial_or_discharge' }
+  });
+
+  user.status = 'suspended';
+  user.suspendedAt = new Date();
+  user.suspendedBy = req.user._id;
+  user.suspensionReason = req.body.reason || undefined;
+  user.tokenVersion = (user.tokenVersion || 0) + 1;
+  await user.save({ validateBeforeSave: false });
+
+  await UserAuditLog.create({
+    userId: user._id,
+    action: 'suspended',
+    performedBy: req.user._id,
+    reason: req.body.reason || undefined,
+    timestamp: new Date()
+  });
+
+  sendSuccess(res, 200, 'User suspended successfully', {
+    user,
+    activeCasesCount
+  });
+});
+
+/**
+ * @desc    Reactivate a user
+ * @route   PATCH /api/v1/users/:id/reactivate
+ * @access  Private (Admin)
+ */
+exports.reactivateUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
 
   if (!user) {
     return sendError(res, 404, 'User not found');
   }
 
-  // Safety Safeguard 1: Prevent self-deletion
-  if (user._id.toString() === req.user._id.toString()) {
-    return sendError(res, 400, 'You cannot delete your own administrator account');
-  }
+  user.status = 'active';
+  user.reactivatedAt = new Date();
+  user.reactivatedBy = req.user._id;
+  await user.save({ validateBeforeSave: false });
 
-  // Safety Safeguard 2: Prevent deleting the last remaining admin
-  if (user.role === 'admin') {
-    const adminCount = await User.countDocuments({ role: 'admin' });
-    if (adminCount <= 1) {
-      return sendError(res, 400, 'Cannot delete the last remaining administrator account in the system');
-    }
-  }
+  await UserAuditLog.create({
+    userId: user._id,
+    action: 'reactivated',
+    performedBy: req.user._id,
+    timestamp: new Date()
+  });
 
-  await user.deleteOne();
-
-  sendSuccess(res, 200, 'User deleted successfully');
+  sendSuccess(res, 200, 'User reactivated successfully', { user });
 });
+
+/**
+ * @desc    Get user audit log
+ * @route   GET /api/v1/users/:id/audit-log
+ * @access  Private (Admin)
+ */
+exports.getUserAuditLog = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return sendError(res, 404, 'User not found');
+  }
+
+  const logs = await UserAuditLog.find({ userId: req.params.id })
+    .populate('performedBy', 'firstName lastName email')
+    .sort({ timestamp: -1 });
+
+  sendSuccess(res, 200, 'User audit log retrieved successfully', { logs });
+});
+

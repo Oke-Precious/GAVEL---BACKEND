@@ -74,6 +74,33 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  status: {
+    type: String,
+    enum: ['active', 'suspended'],
+    default: 'active',
+  },
+  tokenVersion: {
+    type: Number,
+    default: 0,
+  },
+  suspendedAt: {
+    type: Date,
+  },
+  suspendedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  suspensionReason: {
+    type: String,
+    trim: true,
+  },
+  reactivatedAt: {
+    type: Date,
+  },
+  reactivatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
   lastLogin: {
     type: Date,
   }
@@ -100,7 +127,7 @@ userSchema.methods.comparePassword = async function(enteredPassword) {
 // Sign JWT Access Token
 userSchema.methods.generateAuthToken = function() {
   return jwt.sign(
-    { id: this._id, role: this.role },
+    { id: this._id, role: this.role, tokenVersion: this.tokenVersion || 0 },
     env.JWT_SECRET,
     { expiresIn: env.JWT_EXPIRES_IN }
   );

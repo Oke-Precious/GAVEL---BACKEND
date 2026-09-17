@@ -1,5 +1,5 @@
 const express = require('express');
-const { getUsers, inviteUser, updateUser, deleteUser } = require('../../controllers/userController');
+const { getUsers, inviteUser, updateUser, suspendUser, reactivateUser, getUserAuditLog } = require('../../controllers/userController');
 const { protect, authorize } = require('../../middleware/auth');
 const { body } = require('express-validator');
 const validate = require('../../middleware/validate');
@@ -21,8 +21,11 @@ router.route('/')
 
 router.post('/invite', inviteValidation, validate, inviteUser);
 
+router.patch('/:id/suspend', suspendUser);
+router.patch('/:id/reactivate', reactivateUser);
+router.get('/:id/audit-log', getUserAuditLog);
+
 router.route('/:id')
-  .patch(updateUser)
-  .delete(deleteUser);
+  .patch(updateUser);
 
 module.exports = router;

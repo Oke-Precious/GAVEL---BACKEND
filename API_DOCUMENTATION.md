@@ -220,7 +220,9 @@ Accessible to `admin` role only.
 | `GET` | `/users` | `?role=lawyer&page=1&limit=20` | Paginated list of all users, filterable by role. |
 | `POST` | `/users/invite` | `{ email, firstName, lastName, role, court? }` | Creates an account with a secure auto-generated temp password and sends an invite email. Account is pre-verified. |
 | `PATCH` | `/users/:id` | `{ firstName?, lastName?, role?, phoneNumber?, isActive? }` | Updates user fields. Cannot update `password` through this endpoint. |
-| `DELETE` | `/users/:id` | — | Permanently deletes a user. Prevents self-deletion and deletion of the last admin. |
+| `PATCH` | `/users/:id/suspend` | `{ reason? }` | Suspends a user account, invalidates existing sessions, and logs action. Self-suspension blocked. Returns count of active assigned cases. |
+| `PATCH` | `/users/:id/reactivate` | — | Reactivates a suspended user account and logs action. |
+| `GET` | `/users/:id/audit-log` | — | Returns user suspension and reactivation history. |
 
 ---
 

@@ -82,7 +82,11 @@ exports.login = asyncHandler(async (req, res) => {
     return sendError(res, 401, 'Invalid credentials');
   }
 
-  // Check if active
+  // Check if suspended or deactivated
+  if (user.status === 'suspended') {
+    return sendError(res, 403, 'Your account has been suspended. Contact an administrator.');
+  }
+
   if (!user.isActive) {
     return sendError(res, 401, 'Your account has been deactivated');
   }

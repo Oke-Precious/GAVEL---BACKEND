@@ -465,7 +465,9 @@ FHC/001/2026,"Land Dispute Case","Lagos High Court",Pre-Trial,Active,false</code
                         <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/users</code></td><td><code>?role=lawyer&amp;page=1&amp;limit=20</code></td><td>Paginated list of all users, filterable by role.</td></tr>
                         <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/users/invite</code></td><td><code>{ email, firstName, lastName, role, court? }</code></td><td>Creates account with auto-generated temp password. Sends invite email. Account is pre-verified.</td></tr>
                         <tr><td data-label="Method"><span class="method patch">PATCH</span></td><td><code>/users/:id</code></td><td><code>{ firstName?, lastName?, role?, phoneNumber?, isActive? }</code></td><td>Updates user fields. Cannot update <code>password</code> through this endpoint.</td></tr>
-                        <tr><td data-label="Method"><span class="method delete">DELETE</span></td><td><code>/users/:id</code></td><td>—</td><td>Permanently deletes a user. Prevents self-deletion and deletion of the last admin.</td></tr>
+                        <tr><td data-label="Method"><span class="method patch">PATCH</span></td><td><code>/users/:id/suspend</code></td><td><code>{ reason? }</code></td><td>Suspends user, increments tokenVersion to invalidate existing tokens immediately, and logs action. Prevents self-suspension.</td></tr>
+                        <tr><td data-label="Method"><span class="method patch">PATCH</span></td><td><code>/users/:id/reactivate</code></td><td>—</td><td>Reactivates a suspended user and logs action.</td></tr>
+                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/users/:id/audit-log</code></td><td>—</td><td>Returns user suspension and reactivation history.</td></tr>
                     </tbody>
                 </table>
             </div>

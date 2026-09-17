@@ -35,8 +35,12 @@ exports.protect = asyncHandler(async (req, res, next) => {
       return sendError(res, 401, 'The user belonging to this token no longer exists');
     }
     
-    if (!user.isActive) {
-      return sendError(res, 401, 'Your account has been deactivated. Please contact support.');
+    if (user.status === 'suspended' || !user.isActive) {
+      return sendError(res, 401, 'Your account has been suspended. Contact an administrator.');
+    }
+
+    if (decoded.tokenVersion === undefined || decoded.tokenVersion !== (user.tokenVersion || 0)) {
+      return sendError(res, 401, 'Not authorized to access this route. Token has been invalidated.');
     }
 
     req.user = user;
