@@ -3,250 +3,788 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Complete API reference for the GAVEL court case management backend.">
     <title>GAVEL API Documentation</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f172a;
-            --sidebar-bg: rgba(30, 41, 59, 0.75);
-            --card-bg: rgba(30, 41, 59, 0.5);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #8b5cf6;
-            --accent-hover: #7c3aed;
-            --border: rgba(255, 255, 255, 0.1);
-            --get-color: #10b981;
-            --post-color: #3b82f6;
-            --patch-color: #f59e0b;
-            --delete-color: #ef4444;
-            --info-bg: rgba(59, 130, 246, 0.1);
-            --warn-bg: rgba(245, 158, 11, 0.1);
-            --warn-border: rgba(245, 158, 11, 0.4);
-            --info-border: rgba(59, 130, 246, 0.4);
+            color-scheme: dark;
+            --page: #08111f;
+            --panel: #101c2f;
+            --panel-soft: #0d1829;
+            --sidebar: rgba(8, 17, 31, 0.96);
+            --text: #eef4ff;
+            --muted: #9eacc2;
+            --border: #263650;
+            --accent: #a78bfa;
+            --accent-strong: #8b5cf6;
+            --link: #7dd3fc;
+            --get: #34d399;
+            --post: #60a5fa;
+            --patch: #fbbf24;
+            --delete: #fb7185;
+            --success: #86efac;
+            --warning: #fde68a;
+            --danger: #fda4af;
+            --code: #07101d;
+            --sidebar-width: 292px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 24px;
+        }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
             min-height: 100vh;
-            line-height: 1.6;
-            background-image:
-                radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.15) 0px, transparent 50%);
-            background-attachment: fixed;
+            margin: 0;
+            background:
+                radial-gradient(circle at top left, rgba(124, 58, 237, 0.14), transparent 34rem),
+                radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.10), transparent 38rem),
+                var(--page);
+            color: var(--text);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 15px;
+            line-height: 1.65;
+        }
+
+        a {
+            color: var(--link);
+        }
+
+        a:focus-visible,
+        summary:focus-visible {
+            border-radius: 6px;
+            outline: 3px solid rgba(125, 211, 252, 0.45);
+            outline-offset: 3px;
+        }
+
+        .skip-link {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 100;
+            padding: 0.65rem 0.9rem;
+            border-radius: 8px;
+            background: var(--text);
+            color: var(--page);
+            transform: translateY(-150%);
+        }
+
+        .skip-link:focus {
+            transform: translateY(0);
         }
 
         .sidebar {
-            width: 280px;
-            background: var(--sidebar-bg);
-            backdrop-filter: blur(12px);
-            border-right: 1px solid var(--border);
-            padding: 2rem;
             position: fixed;
-            height: 100vh;
+            inset: 0 auto 0 0;
+            z-index: 20;
+            width: var(--sidebar-width);
             overflow-y: auto;
+            padding: 1.5rem 1.25rem;
+            border-right: 1px solid var(--border);
+            background: var(--sidebar);
+            backdrop-filter: blur(18px);
         }
 
-        .sidebar h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 2rem;
-            background: linear-gradient(to right, #a78bfa, #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .sidebar ul { list-style: none; }
-        .sidebar li { margin-bottom: 0.35rem; }
-        .sidebar a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.2s;
+        .brand {
             display: block;
-            padding: 0.4rem 0.75rem;
-            border-radius: 6px;
-            font-size: 0.88rem;
-        }
-        .sidebar a:hover { color: var(--text-main); background: rgba(255,255,255,0.05); padding-left: 1rem; }
-
-        .content { margin-left: 280px; padding: 3rem 4rem; flex: 1; max-width: 1200px; }
-
-        .content h2 {
-            font-size: 1.75rem;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--border);
-            margin-top: 3rem;
-            color: #f1f5f9;
-        }
-        .content h2:first-child { margin-top: 0; }
-        .content h3 { font-size: 1rem; margin-bottom: 0.5rem; color: #e2e8f0; }
-
-        p { color: var(--text-muted); margin-bottom: 1rem; }
-
-        .endpoint-group {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            margin-bottom: 0.25rem;
+            color: var(--text);
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            text-decoration: none;
         }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
-        th, td { padding: 0.85rem 1rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
-        th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
-        tr:last-child td { border-bottom: none; }
+        .brand span {
+            color: var(--accent);
+        }
 
-        .method {
-            padding: 0.2rem 0.6rem;
-            border-radius: 9999px;
-            font-size: 0.7rem;
-            font-weight: 700;
+        .sidebar-subtitle {
+            margin: 0 0 1.35rem;
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
+        .nav-label {
+            margin: 1.15rem 0 0.4rem;
+            color: #6f8099;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
-            display: inline-block;
-            white-space: nowrap;
         }
-        .method.get    { background: rgba(16,185,129,0.15); color: var(--get-color);    border: 1px solid rgba(16,185,129,0.3); }
-        .method.post   { background: rgba(59,130,246,0.15); color: var(--post-color);   border: 1px solid rgba(59,130,246,0.3); }
-        .method.patch  { background: rgba(245,158,11,0.15); color: var(--patch-color);  border: 1px solid rgba(245,158,11,0.3); }
-        .method.delete { background: rgba(239,68,68,0.15);  color: var(--delete-color); border: 1px solid rgba(239,68,68,0.3); }
+
+        .toc {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .toc li {
+            margin: 0.13rem 0;
+        }
+
+        .toc a {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.38rem 0.6rem;
+            border-radius: 7px;
+            color: var(--muted);
+            font-size: 0.84rem;
+            font-weight: 550;
+            text-decoration: none;
+            transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+        }
+
+        .toc a:hover {
+            color: var(--text);
+            background: rgba(167, 139, 250, 0.1);
+            transform: translateX(3px);
+        }
+
+        .toc-number {
+            min-width: 1.35rem;
+            color: #7688a2;
+            font-size: 0.72rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .sidebar-meta {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            color: #7688a2;
+            font-size: 0.72rem;
+            overflow-wrap: anywhere;
+        }
+
+        .mobile-toc {
+            display: none;
+        }
+
+        main {
+            width: min(1180px, calc(100% - var(--sidebar-width)));
+            margin-left: var(--sidebar-width);
+            padding: 3rem clamp(1.5rem, 5vw, 4.5rem) 5rem;
+        }
+
+        section {
+            margin-top: 4rem;
+            scroll-margin-top: 1.5rem;
+        }
+
+        section:first-child {
+            margin-top: 0;
+        }
+
+        .hero {
+            padding: clamp(1.5rem, 4vw, 2.75rem);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.16), rgba(14, 165, 233, 0.08));
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+        }
+
+        .eyebrow {
+            margin: 0 0 0.5rem;
+            color: var(--accent);
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: var(--text);
+            line-height: 1.25;
+        }
+
+        h1 {
+            max-width: 760px;
+            margin: 0;
+            font-size: clamp(2rem, 5vw, 3.35rem);
+            letter-spacing: -0.045em;
+        }
+
+        h2 {
+            display: flex;
+            align-items: baseline;
+            gap: 0.55rem;
+            margin: 0 0 1rem;
+            padding-bottom: 0.65rem;
+            border-bottom: 1px solid var(--border);
+            font-size: clamp(1.45rem, 3vw, 2rem);
+            letter-spacing: -0.025em;
+        }
+
+        h3 {
+            margin: 0 0 0.75rem;
+            font-size: 1.02rem;
+        }
+
+        .heading-link {
+            color: #64748b;
+            font-size: 0.75em;
+            text-decoration: none;
+            opacity: 0;
+            transition: opacity 150ms ease;
+        }
+
+        h2:hover .heading-link,
+        h2:focus-within .heading-link {
+            opacity: 1;
+        }
+
+        p {
+            margin: 0 0 1rem;
+            color: var(--muted);
+        }
+
+        strong {
+            color: #dce8fa;
+        }
+
+        .lead {
+            max-width: 790px;
+            margin: 0.85rem 0 1.35rem;
+            color: #c7d3e7;
+            font-size: 1.04rem;
+        }
+
+        .quick-links,
+        .base-grid,
+        .demo-grid,
+        .response-grid {
+            display: grid;
+            gap: 0.8rem;
+        }
+
+        .quick-links {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            margin-top: 1.35rem;
+        }
+
+        .quick-link {
+            padding: 0.9rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            background: rgba(7, 16, 29, 0.5);
+            color: #c9d7eb;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .quick-link:hover {
+            border-color: var(--accent-strong);
+            color: white;
+        }
+
+        .base-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .base-url,
+        .demo-card {
+            padding: 0.85rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--panel-soft);
+        }
+
+        .base-url span,
+        .demo-card span {
+            display: block;
+            margin-bottom: 0.22rem;
+            color: #7688a2;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .base-url code {
+            word-break: break-all;
+        }
+
+        .card {
+            margin-top: 1rem;
+            padding: 1.25rem;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: rgba(16, 28, 47, 0.74);
+            box-shadow: 0 10px 36px rgba(0, 0, 0, 0.12);
+        }
+
+        .card > :last-child {
+            margin-bottom: 0;
+        }
+
+        .callout {
+            margin: 1rem 0;
+            padding: 0.85rem 1rem;
+            border: 1px solid rgba(96, 165, 250, 0.25);
+            border-left: 4px solid var(--post);
+            border-radius: 8px;
+            background: rgba(59, 130, 246, 0.08);
+            color: #bdd7fa;
+        }
+
+        .callout.warning {
+            border-color: rgba(251, 191, 36, 0.25);
+            border-left-color: var(--patch);
+            background: rgba(245, 158, 11, 0.08);
+            color: var(--warning);
+        }
+
+        .callout.success {
+            border-color: rgba(52, 211, 153, 0.25);
+            border-left-color: var(--get);
+            background: rgba(16, 185, 129, 0.08);
+            color: var(--success);
+        }
+
+        code,
+        pre {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        }
 
         code {
-            font-family: monospace;
-            background: rgba(0,0,0,0.3);
-            padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-            font-size: 0.83rem;
-            color: #cbd5e1;
+            padding: 0.12rem 0.35rem;
+            border: 1px solid rgba(148, 163, 184, 0.13);
+            border-radius: 5px;
+            background: rgba(7, 16, 29, 0.76);
+            color: #d6e3f6;
+            font-size: 0.86em;
         }
 
         pre {
-            background: rgba(0,0,0,0.4);
-            padding: 1.25rem;
-            border-radius: 8px;
+            margin: 0.75rem 0 1rem;
+            padding: 1rem 1.1rem;
             overflow-x: auto;
             border: 1px solid var(--border);
-            margin-bottom: 1.5rem;
-        }
-        pre code { background: transparent; padding: 0; color: #a78bfa; }
-
-        .note {
-            background: var(--info-bg);
-            border-left: 3px solid var(--info-border);
-            border-radius: 0 8px 8px 0;
-            padding: 0.75rem 1rem;
-            margin-bottom: 1rem;
-            font-size: 0.88rem;
-            color: #93c5fd;
-        }
-        .warn {
-            background: var(--warn-bg);
-            border-left: 3px solid var(--warn-border);
-            border-radius: 0 8px 8px 0;
-            padding: 0.75rem 1rem;
-            margin-bottom: 1rem;
-            font-size: 0.88rem;
-            color: #fcd34d;
-        }
-
-        .badge-table { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
-        .origin-badge {
-            font-size: 0.78rem;
-            padding: 0.2rem 0.6rem;
-            border-radius: 6px;
-            background: rgba(139,92,246,0.15);
-            border: 1px solid rgba(139,92,246,0.3);
+            border-radius: 10px;
+            background: var(--code);
             color: #c4b5fd;
-            font-family: monospace;
+            font-size: 0.84rem;
+            line-height: 1.58;
+            tab-size: 2;
         }
 
-        .demo-accounts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
-        .demo-card {
-            background: rgba(0,0,0,0.25);
+        pre code {
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            font-size: inherit;
+        }
+
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
+            border-radius: 12px;
         }
-        .demo-card .role { font-size: 0.75rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
-        .demo-card .email { font-size: 0.82rem; color: var(--text-main); margin-top: 0.2rem; font-family: monospace; }
 
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .content { margin-left: 0; padding: 1.5rem; }
-            table, thead, tbody, th, td, tr { display: block; }
-            th { display: none; }
-            td { padding: 0.5rem 0; }
-            td::before { content: attr(data-label); font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.25rem; }
+        table {
+            width: 100%;
+            min-width: 760px;
+            border-collapse: collapse;
+            background: rgba(13, 24, 41, 0.55);
+        }
+
+        th,
+        td {
+            padding: 0.82rem 0.9rem;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: rgba(7, 16, 29, 0.72);
+            color: #8798b1;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        td {
+            color: #b8c6da;
+            font-size: 0.84rem;
+        }
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
+
+        tbody tr:hover {
+            background: rgba(167, 139, 250, 0.035);
+        }
+
+        .method,
+        .access {
+            display: inline-block;
+            white-space: nowrap;
+            border-radius: 999px;
+            font-size: 0.66rem;
+            font-weight: 850;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .method {
+            min-width: 4.1rem;
+            padding: 0.22rem 0.55rem;
+            text-align: center;
+        }
+
+        .method.get {
+            border: 1px solid rgba(52, 211, 153, 0.35);
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--get);
+        }
+
+        .method.post {
+            border: 1px solid rgba(96, 165, 250, 0.35);
+            background: rgba(59, 130, 246, 0.12);
+            color: var(--post);
+        }
+
+        .method.patch {
+            border: 1px solid rgba(251, 191, 36, 0.35);
+            background: rgba(245, 158, 11, 0.12);
+            color: var(--patch);
+        }
+
+        .method.delete {
+            border: 1px solid rgba(251, 113, 133, 0.35);
+            background: rgba(244, 63, 94, 0.12);
+            color: var(--delete);
+        }
+
+        .access {
+            padding: 0.18rem 0.48rem;
+            border: 1px solid var(--border);
+            color: #aebcd0;
+        }
+
+        .demo-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        .demo-card code {
+            display: block;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            word-break: break-all;
+        }
+
+        .badge-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 0.75rem 0 1rem;
+        }
+
+        .badge {
+            padding: 0.3rem 0.6rem;
+            border: 1px solid rgba(167, 139, 250, 0.28);
+            border-radius: 7px;
+            background: rgba(139, 92, 246, 0.08);
+            color: #c4b5fd;
+            font-family: "SFMono-Regular", Consolas, monospace;
+            font-size: 0.76rem;
+        }
+
+        .response-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .mini-title {
+            margin: 1.5rem 0 0.55rem;
+            color: #d8e4f7;
+            font-size: 0.9rem;
+            font-weight: 800;
+        }
+
+        .top-link {
+            display: inline-block;
+            margin-top: 2rem;
+            color: var(--muted);
+            font-size: 0.82rem;
+            text-decoration: none;
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid var(--border);
+            color: #72829a;
+            font-size: 0.78rem;
+        }
+
+        @media (max-width: 1080px) {
+            .quick-links {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .demo-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 820px) {
+            html {
+                scroll-padding-top: 76px;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .mobile-toc {
+                position: sticky;
+                top: 0;
+                z-index: 30;
+                display: block;
+                border-bottom: 1px solid var(--border);
+                background: rgba(8, 17, 31, 0.96);
+                backdrop-filter: blur(16px);
+            }
+
+            .mobile-toc summary {
+                padding: 0.9rem 1rem;
+                color: var(--text);
+                cursor: pointer;
+                font-weight: 750;
+            }
+
+            .mobile-toc .toc {
+                max-height: 65vh;
+                overflow-y: auto;
+                padding: 0 0.75rem 0.9rem;
+            }
+
+            main {
+                width: 100%;
+                margin-left: 0;
+                padding: 1.25rem 1rem 4rem;
+            }
+
+            section {
+                margin-top: 3rem;
+                scroll-margin-top: 76px;
+            }
+
+            .base-grid,
+            .response-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .hero {
+                padding: 1.25rem;
+                border-radius: 14px;
+            }
+
+            .quick-links,
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 1rem;
+            }
+
+            h2 {
+                align-items: center;
+            }
+
+            .heading-link {
+                opacity: 1;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+                color: #111827;
+            }
+
+            .sidebar,
+            .mobile-toc,
+            .skip-link,
+            .top-link {
+                display: none;
+            }
+
+            main {
+                width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            section {
+                break-inside: avoid;
+            }
+
+            .hero,
+            .card,
+            .table-wrap {
+                box-shadow: none;
+            }
         }
     </style>
 </head>
-<body>
+<body id="top">
+    <a class="skip-link" href="#main-content">Skip to API content</a>
 
-    <nav class="sidebar">
-        <h1>GAVEL API Docs</h1>
-        <ul>
-            <li><a href="#intro">Introduction</a></li>
-            <li><a href="#quickstart">Quick Start</a></li>
-            <li><a href="#cors">CORS Origins</a></li>
-            <li><a href="#auth">1. Auth Module</a></li>
-            <li><a href="#cases">2. Cases Module</a></li>
-            <li><a href="#documents">3. Documents</a></li>
-            <li><a href="#public">4. Public Data</a></li>
-            <li><a href="#watch">5. Watch Subscriptions</a></li>
-            <li><a href="#pro-bono">6. Pro-Bono</a></li>
-            <li><a href="#analytics">7. Admin Analytics</a></li>
-            <li><a href="#users">8. User Management</a></li>
-            <li><a href="#health">9. System Health</a></li>
-            <li><a href="#response">Response Format</a></li>
+    <aside class="sidebar" aria-label="Documentation navigation">
+        <a class="brand" href="#overview">GAVEL <span>API</span></a>
+        <p class="sidebar-subtitle">Complete backend reference</p>
+
+        <p class="nav-label">Getting started</p>
+        <ul class="toc">
+            <li><a href="#overview"><span class="toc-number">00</span>Overview</a></li>
+            <li><a href="#quick-start"><span class="toc-number">01</span>Quick start</a></li>
+            <li><a href="#cors"><span class="toc-number">02</span>CORS</a></li>
         </ul>
-    </nav>
 
-    <main class="content">
+        <p class="nav-label">API modules</p>
+        <ul class="toc">
+            <li><a href="#auth"><span class="toc-number">01</span>Authentication</a></li>
+            <li><a href="#cases"><span class="toc-number">02</span>Cases</a></li>
+            <li><a href="#documents"><span class="toc-number">03</span>Documents</a></li>
+            <li><a href="#public"><span class="toc-number">04</span>Public data</a></li>
+            <li><a href="#watch"><span class="toc-number">05</span>Watch subscriptions</a></li>
+            <li><a href="#pro-bono"><span class="toc-number">06</span>Pro-bono</a></li>
+            <li><a href="#analytics"><span class="toc-number">07</span>Admin analytics</a></li>
+            <li><a href="#users"><span class="toc-number">08</span>User management</a></li>
+            <li><a href="#contact"><span class="toc-number">09</span>Contact inbox</a></li>
+            <li><a href="#health"><span class="toc-number">10</span>System health</a></li>
+        </ul>
 
-        <!-- INTRO -->
-        <section id="intro">
-            <h2>GAVEL API Reference</h2>
-            <p>Welcome to the GAVEL API Reference. This is a court case management system backend. Use the base URLs below for all endpoints.</p>
+        <p class="nav-label">Reference</p>
+        <ul class="toc">
+            <li><a href="#responses"><span class="toc-number">R1</span>Response formats</a></li>
+            <li><a href="#status-codes"><span class="toc-number">R2</span>Status codes</a></li>
+        </ul>
 
-            <div class="endpoint-group">
-                <h3>Base URLs</h3>
-                <table>
-                    <thead><tr><th>Environment</th><th>Base URL</th></tr></thead>
-                    <tbody>
-                        <tr><td data-label="Env">Local Development</td><td><code>http://localhost:1940/api/v1</code></td></tr>
-                        <tr><td data-label="Env">Production</td><td><code>https://gavel-backend-nw0p.onrender.com/api/v1</code></td></tr>
-                        <tr><td data-label="Env">API Docs (browser)</td><td><code>http://localhost:1940/docs</code></td></tr>
-                        <tr><td data-label="Env">Health Check</td><td><code>http://localhost:1940/api/v1/health</code></td></tr>
-                    </tbody>
-                </table>
+        <div class="sidebar-meta">
+            Base prefix: <code>/api/v1</code><br>
+            Production: gavel-backend-nw0p.onrender.com
+        </div>
+    </aside>
+
+    <details class="mobile-toc">
+        <summary>GAVEL API documentation menu</summary>
+        <ul class="toc">
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#quick-start">Quick start</a></li>
+            <li><a href="#cors">CORS</a></li>
+            <li><a href="#auth">1. Authentication</a></li>
+            <li><a href="#cases">2. Cases</a></li>
+            <li><a href="#documents">3. Documents</a></li>
+            <li><a href="#public">4. Public data</a></li>
+            <li><a href="#watch">5. Watch subscriptions</a></li>
+            <li><a href="#pro-bono">6. Pro-bono</a></li>
+            <li><a href="#analytics">7. Admin analytics</a></li>
+            <li><a href="#users">8. User management</a></li>
+            <li><a href="#contact">9. Contact inbox</a></li>
+            <li><a href="#health">10. System health</a></li>
+            <li><a href="#responses">Response formats</a></li>
+            <li><a href="#status-codes">Status codes</a></li>
+        </ul>
+    </details>
+
+    <main id="main-content">
+        <section id="overview" class="hero">
+            <p class="eyebrow">GAVEL backend</p>
+            <h1>API documentation and integration reference</h1>
+            <p class="lead">A complete reference for authentication, court cases, documents, public transparency data, pro-bono workflows, administration, and public contact reporting.</p>
+
+            <div class="base-grid">
+                <div class="base-url">
+                    <span>Local base URL</span>
+                    <code>http://localhost:1940/api/v1</code>
+                </div>
+                <div class="base-url">
+                    <span>Production base URL</span>
+                    <code>https://gavel-backend-nw0p.onrender.com/api/v1</code>
+                </div>
+                <div class="base-url">
+                    <span>Browser documentation</span>
+                    <code>http://localhost:1940/docs</code>
+                </div>
+                <div class="base-url">
+                    <span>Health check</span>
+                    <code>GET /health</code>
+                </div>
             </div>
 
-            <div class="endpoint-group">
-                <h3>🔒 Authentication &amp; Authorization</h3>
-                <p style="margin-bottom:0.5rem;">
-                    <strong>JWT Bearer Token:</strong> Send <code>Authorization: Bearer &lt;accessToken&gt;</code> in request headers.<br>
-                    <strong>HTTP-Only Cookie:</strong> A <code>refreshToken</code> cookie is set automatically on login. Requires <code>withCredentials: true</code> in Axios.<br>
-                    <strong>Token Expiry:</strong> Access tokens expire in <strong>30 minutes</strong>. Use <code>POST /auth/refresh-token</code> to renew.<br>
-                    <strong>User Roles:</strong> <code>admin</code>, <code>judge</code>, <code>lawyer</code>, <code>clerk</code>, <code>litigant</code>, <code>public</code>.
-                </p>
+            <div class="quick-links" aria-label="Quick links">
+                <a class="quick-link" href="#auth">Authentication setup</a>
+                <a class="quick-link" href="#contact">Contact API</a>
+                <a class="quick-link" href="#responses">Response contract</a>
+                <a class="quick-link" href="#status-codes">HTTP status codes</a>
+            </div>
+        </section>
+
+        <section id="quick-start">
+            <h2>Quick start <a class="heading-link" href="#quick-start" aria-label="Link to Quick start">#</a></h2>
+            <div class="card">
+                <pre><code># Install dependencies
+npm install
+
+# Seed demo users and sample cases
+npm run seed
+
+# Start with automatic reload
+npm run dev
+
+# Run the test suite
+npm test</code></pre>
+                <div class="callout">All seeded demo accounts use the password <strong>Password123!</strong>.</div>
+                <div class="demo-grid">
+                    <div class="demo-card"><span>Admin</span><code>admin@gavel.app</code></div>
+                    <div class="demo-card"><span>Judge</span><code>judge@gavel.app</code></div>
+                    <div class="demo-card"><span>Lawyer</span><code>lawyer@gavel.app</code></div>
+                    <div class="demo-card"><span>Clerk</span><code>clerk@gavel.app</code></div>
+                    <div class="demo-card"><span>Litigant</span><code>litigant@gavel.app</code></div>
+                </div>
             </div>
 
-            <div class="endpoint-group">
-                <h3>Recommended Axios Setup</h3>
+            <div class="card">
+                <h3>Authentication and authorization</h3>
+                <p>Protected routes require <code>Authorization: Bearer &lt;accessToken&gt;</code>. Login also sets an HTTP-only <code>refreshToken</code> cookie, so browser clients should enable credentials. A refresh token may alternatively be sent in the request body.</p>
+                <div class="badge-list" aria-label="Available roles">
+                    <span class="badge">admin</span>
+                    <span class="badge">judge</span>
+                    <span class="badge">lawyer</span>
+                    <span class="badge">clerk</span>
+                    <span class="badge">litigant</span>
+                    <span class="badge">public</span>
+                </div>
                 <pre><code>import axios from 'axios';
 
 const api = axios.create({
   baseURL: 'http://localhost:1940/api/v1',
-  withCredentials: true, // Required for refresh token cookie
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json' }
 });
 
-// Attach access token to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -255,255 +793,365 @@ api.interceptors.request.use((config) => {
             </div>
         </section>
 
-        <!-- QUICK START -->
-        <section id="quickstart">
-            <h2>🚀 Quick Start</h2>
-            <div class="endpoint-group">
-                <pre><code># 1. Install dependencies
-npm install
-
-# 2. Seed the database with demo users and sample cases
-npm run seed
-
-# 3. Start dev server (auto-reload)
-npm run dev
-
-# 4. Run unit tests
-npm test</code></pre>
-                <div class="note">All demo accounts share password: <strong>Password123!</strong></div>
-                <div class="demo-accounts">
-                    <div class="demo-card"><div class="role">Admin</div><div class="email">admin@gavel.app</div></div>
-                    <div class="demo-card"><div class="role">Judge</div><div class="email">judge@gavel.app</div></div>
-                    <div class="demo-card"><div class="role">Lawyer</div><div class="email">lawyer@gavel.app</div></div>
-                    <div class="demo-card"><div class="role">Clerk</div><div class="email">clerk@gavel.app</div></div>
-                    <div class="demo-card"><div class="role">Litigant</div><div class="email">litigant@gavel.app</div></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- CORS -->
         <section id="cors">
-            <h2>🌐 CORS — Allowed Origins</h2>
-            <p>The following frontend origins work without any configuration changes:</p>
-            <div class="endpoint-group">
-                <div class="badge-table">
-                    <span class="origin-badge">http://localhost:5173</span>
-                    <span class="origin-badge">http://localhost:3000</span>
-                    <span class="origin-badge">http://localhost:5174</span>
-                    <span class="origin-badge">http://localhost:8080</span>
-                    <span class="origin-badge">http://127.0.0.1:5173</span>
-                    <span class="origin-badge">http://127.0.0.1:3000</span>
-                    <span class="origin-badge">CLIENT_URL (from .env)</span>
+            <h2>CORS origins <a class="heading-link" href="#cors" aria-label="Link to CORS origins">#</a></h2>
+            <p>The backend accepts requests from <code>CLIENT_URL</code> and the following built-in development origins. Requests without an origin, such as curl, Postman, or native mobile clients, are also accepted.</p>
+            <div class="card">
+                <div class="badge-list">
+                    <span class="badge">http://localhost:5173</span>
+                    <span class="badge">http://localhost:3000</span>
+                    <span class="badge">http://localhost:5174</span>
+                    <span class="badge">http://localhost:8080</span>
+                    <span class="badge">http://127.0.0.1:5173</span>
+                    <span class="badge">http://127.0.0.1:3000</span>
+                    <span class="badge">CLIENT_URL</span>
                 </div>
-                <div class="note">In <code>development</code> mode, all origins are permitted automatically for local convenience.</div>
+                <div class="callout">When <code>NODE_ENV</code> is not <code>production</code>, other origins are permitted for local development.</div>
             </div>
         </section>
 
-        <!-- AUTH -->
         <section id="auth">
-            <h2>1. Auth Module (<code>/auth</code>)</h2>
-            <div class="endpoint-group">
+            <h2>1. Authentication <a class="heading-link" href="#auth" aria-label="Link to Authentication">#</a></h2>
+            <p>Base path: <code>/auth</code>. Registration, login, verification, password recovery, and token refresh are public. Profile and logout operations require authentication.</p>
+            <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Body</th><th>Description</th></tr>
+                        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Body</th><th>Behavior</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/register</code></td><td>No</td><td><code>{ firstName, lastName, email, password, role?, phoneNumber?, barNumber? }</code></td><td>Register user. Default role: <code>public</code>. Sends verification email.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/login</code></td><td>No</td><td><code>{ email, password }</code></td><td>Returns <code>accessToken</code>, <code>refreshToken</code>, sets <code>refreshToken</code> HTTP-only cookie.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/logout</code></td><td>Yes</td><td>—</td><td>Clears refresh token from DB and cookie.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/refresh-token</code></td><td>No</td><td><code>{ refreshToken? }</code> or via cookie</td><td>Issues new access + refresh token pair (token rotation). Accepts cookie OR JSON body.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/auth/me</code></td><td>Yes</td><td>—</td><td>Returns authenticated user's profile.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/forgot-password</code></td><td>No</td><td><code>{ email }</code></td><td>Sends password reset link. Always returns success to prevent email enumeration.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/reset-password/:token</code></td><td>No</td><td><code>{ password }</code></td><td>Resets password. Token valid for <strong>10 minutes</strong>.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/auth/verify-email/:token</code></td><td>No</td><td>—</td><td>Verifies email. <strong>Browser requests redirect to <code>CLIENT_URL/login?verified=true</code></strong>. API clients receive JSON.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/auth/resend-verification</code></td><td>No</td><td><code>{ email }</code></td><td>Resends a fresh verification email link.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/auth/register</code></td><td><span class="access">Public</span></td><td><code>{ firstName, lastName, email, password, role?, phoneNumber?, barNumber? }</code></td><td>Creates a volunteer lawyer account and attempts to send an email verification link.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/auth/login</code></td><td><span class="access">Public</span></td><td><code>{ email, password }</code></td><td>Returns the user, access token, and refresh token; also sets the refresh-token cookie.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/auth/logout</code></td><td><span class="access">Authenticated</span></td><td>None</td><td>Clears the stored refresh token and cookie.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/auth/refresh-token</code></td><td><span class="access">Public</span></td><td><code>{ refreshToken? }</code> or cookie</td><td>Rotates the refresh token and returns a new access/refresh pair.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/auth/me</code></td><td><span class="access">Authenticated</span></td><td>None</td><td>Returns the authenticated user's profile.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/auth/forgot-password</code></td><td><span class="access">Public</span></td><td><code>{ email }</code></td><td>Sends a password-reset link. Always returns a neutral success message to prevent account enumeration.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/auth/reset-password/:token</code></td><td><span class="access">Public</span></td><td><code>{ password }</code></td><td>Sets a new password using a reset token valid for 10 minutes and invalidates refresh tokens.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/auth/verify-email/:token</code></td><td><span class="access">Public</span></td><td>None</td><td>Verifies the email. Browser requests redirect to <code>CLIENT_URL/login?verified=true</code>; API clients receive JSON.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/auth/resend-verification</code></td><td><span class="access">Public</span></td><td><code>{ email }</code></td><td>Creates and sends a new verification link for an unverified account.</td></tr>
                     </tbody>
                 </table>
             </div>
-            <div class="note">On login, store <code>accessToken</code> in memory or <code>localStorage</code>. The <code>refreshToken</code> is also returned in the response body for clients that don't support cookies (e.g. React Native).</div>
+
+            <div class="card">
+                <h3>Public signup policy</h3>
+                <p>Public self-signup is available only to volunteer lawyers. If <code>role</code> is omitted, the account is created as <code>lawyer</code>. Legal Aid Officers, Records Officers, administrators, and all other non-lawyer roles must be created by an administrator through <code>POST /users/invite</code>.</p>
+                <div class="callout warning">Submitting <code>admin</code>, <code>judge</code>, <code>clerk</code>, or any other non-lawyer role returns <code>403</code>.</div>
+                <pre><code>{
+  "success": false,
+  "message": "Public signup is only available for volunteer lawyers."
+}</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Registration when verification email fails</h3>
+                <p>The account is committed before email delivery is attempted. If SMTP delivery fails, registration still returns <code>201</code>; the failure is logged internally and the user can request a new verification email.</p>
+                <pre><code>{
+  "success": true,
+  "message": "Account created, but verification email could not be sent. Please request a new verification email.",
+  "data": {
+    "user": {
+      "_id": "...",
+      "email": "lawyer@example.com",
+      "role": "lawyer"
+    }
+  }
+}</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Login response</h3>
+                <pre><code>{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": { "_id": "...", "firstName": "System", "role": "admin" },
+    "accessToken": "eyJhbGci...",
+    "refreshToken": "eyJhbGci..."
+  }
+}</code></pre>
+                <div class="callout">Web clients should prefer the HTTP-only refresh-token cookie. The response-body refresh token supports clients that cannot use browser cookies.</div>
+            </div>
         </section>
 
-        <!-- CASES -->
         <section id="cases">
-            <h2>2. Cases Module (<code>/cases</code>)</h2>
-            <p>All routes require a valid Bearer token.</p>
-            <div class="endpoint-group">
+            <h2>2. Cases <a class="heading-link" href="#cases" aria-label="Link to Cases">#</a></h2>
+            <p>Base path: <code>/cases</code>. Every route requires authentication. List results are automatically scoped so judges and lawyers only see their assigned cases.</p>
+            <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Body / Query</th><th>Description</th></tr>
+                        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Body or query</th><th>Behavior</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases</code></td><td>Yes</td><td><code>?page=1&amp;limit=10&amp;status=Active&amp;stage=Trial</code></td><td>Paginated list. Judges see only their cases; lawyers see their assigned cases.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/cases</code></td><td>Admin / Clerk</td><td><code>{ caseNumber, title, description?, court?, stage?, status?, isProBono?, plaintiffs?, defendants?, detentionDate? }</code></td><td>Creates a new case. A unique <code>hashId</code> (format: <code>GAV-YY-XXXXXX</code>) is auto-generated.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases/export</code></td><td>Admin / Judge</td><td><code>?format=csv</code> or <code>?format=pdf&amp;caseId=&lt;id&gt;</code></td><td>Downloads CSV (all cases) or PDF (single case by MongoDB <code>_id</code>).</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/cases/bulk-import</code></td><td>Admin / Clerk</td><td><code>FormData: { file: .csv }</code></td><td>Bulk create from CSV. Required headers: <code>caseNumber</code>, <code>title</code>. Supports quoted fields.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases/:id</code></td><td>Yes</td><td>—</td><td>Full case by MongoDB <code>_id</code>. Populates <code>lawyers</code> and <code>judge</code> with names/emails.</td></tr>
-                        <tr><td data-label="Method"><span class="method patch">PATCH</span></td><td><code>/cases/:id</code></td><td>Admin / Clerk / Judge</td><td><code>{ title?, description?, court?, plaintiffs?, defendants? }</code></td><td>Updates general info. <strong>Does NOT accept <code>stage</code> or <code>status</code> — use <code>/status</code> below.</strong></td></tr>
-                        <tr><td data-label="Method"><span class="method delete">DELETE</span></td><td><code>/cases/:id</code></td><td>Admin</td><td>—</td><td>Permanently deletes case and its entire audit history.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/cases/:id/status</code></td><td>Admin / Clerk / Judge</td><td><code>{ stage?, status?, stallReason?, comments? }</code></td><td>Updates stage/status and creates immutable audit log entry.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases/:id/audit-log</code></td><td>Yes</td><td>—</td><td>Full <code>StatusHistory</code> timeline showing who changed what and when.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases/:id/qr-slip</code></td><td>Yes</td><td>—</td><td>Returns a Base64 PNG <code>data:image/png;base64,...</code> QR code linking to the public case page.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/cases</code></td><td><span class="access">Authenticated</span></td><td><code>?page=1&amp;limit=10&amp;status=Active&amp;stage=Trial</code></td><td>Returns a paginated and filterable case list.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/cases</code></td><td><span class="access">Admin / Clerk</span></td><td><code>{ caseNumber, title, description?, court?, stage?, status?, isProBono?, plaintiffs?, defendants?, detentionDate? }</code></td><td>Creates a case with a generated <code>GAV-YY-XXXXXX</code> hash ID.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/cases/export</code></td><td><span class="access">Admin / Judge</span></td><td><code>?format=csv</code> or <code>?format=pdf&amp;caseId=&lt;id&gt;</code></td><td>Downloads all cases as CSV or one case as PDF.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/cases/bulk-import</code></td><td><span class="access">Admin / Clerk</span></td><td><code>FormData: { file: .csv }</code></td><td>Creates cases from CSV. Required headers are <code>caseNumber</code> and <code>title</code>.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/cases/:id</code></td><td><span class="access">Authenticated</span></td><td>None</td><td>Returns one case by MongoDB ID with lawyer and judge names/emails populated.</td></tr>
+                        <tr><td><span class="method patch">PATCH</span></td><td><code>/cases/:id</code></td><td><span class="access">Admin / Clerk / Judge</span></td><td><code>{ title?, description?, court?, plaintiffs?, defendants? }</code></td><td>Updates general fields. Stage and status must use the dedicated status endpoint.</td></tr>
+                        <tr><td><span class="method delete">DELETE</span></td><td><code>/cases/:id</code></td><td><span class="access">Admin</span></td><td>None</td><td>Permanently deletes the case and its complete status history.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/cases/:id/status</code></td><td><span class="access">Admin / Clerk / Judge</span></td><td><code>{ stage?, status?, stallReason?, comments? }</code></td><td>Updates stage/status and creates an immutable audit-log entry.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/cases/:id/audit-log</code></td><td><span class="access">Authenticated</span></td><td>None</td><td>Returns the full status-history timeline, including who changed what and when.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/cases/:id/qr-slip</code></td><td><span class="access">Authenticated</span></td><td>None</td><td>Returns a Base64 PNG QR code linking to the public case page.</td></tr>
                     </tbody>
                 </table>
             </div>
-            <div class="endpoint-group">
-                <h3>Bulk Import CSV Format</h3>
+            <div class="card">
+                <h3>Bulk import CSV</h3>
                 <pre><code>caseNumber,title,court,stage,status,isProBono
 FHC/001/2026,"Land Dispute Case","Lagos High Court",Pre-Trial,Active,false</code></pre>
+                <div class="callout warning">The generic <code>PATCH /cases/:id</code> endpoint ignores stage and status. Use <code>POST /cases/:id/status</code> so the change is audited.</div>
             </div>
         </section>
 
-        <!-- DOCUMENTS -->
         <section id="documents">
-            <h2>3. Documents Module</h2>
-            <div class="endpoint-group">
+            <h2>3. Documents <a class="heading-link" href="#documents" aria-label="Link to Documents">#</a></h2>
+            <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Body</th><th>Description</th></tr>
+                        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Body</th><th>Behavior</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/cases/:id/documents</code></td><td>Yes</td><td>—</td><td>Lists all documents for a case. Each item includes a <code>fileUrl</code> field.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/cases/:id/documents</code></td><td>Admin / Clerk / Lawyer</td><td><code>FormData: { file: File, description?: String }</code></td><td>Uploads a file attachment. Returns full document metadata.</td></tr>
-                        <tr><td data-label="Method"><span class="method delete">DELETE</span></td><td><code>/documents/:id</code></td><td>Yes</td><td>—</td><td>Deletes document record and physical file. Only admin or original uploader can delete.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/cases/:id/documents</code></td><td><span class="access">Authenticated</span></td><td>None</td><td>Lists all documents associated with a case, including each document's <code>fileUrl</code>.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/cases/:id/documents</code></td><td><span class="access">Admin / Clerk / Lawyer</span></td><td><code>FormData: { file: File, description?: String }</code></td><td>Uploads a case attachment and returns its metadata.</td></tr>
+                        <tr><td><span class="method delete">DELETE</span></td><td><code>/documents/:id</code></td><td><span class="access">Owner / Admin</span></td><td>None</td><td>Deletes the database record and physical file. Only the uploader or an administrator can delete it.</td></tr>
                     </tbody>
                 </table>
             </div>
-            <div class="note">Accessing uploaded files: prepend the backend URL to the returned <code>fileUrl</code>. Example: <code>http://localhost:1940/uploads/&lt;filename&gt;</code></div>
+            <div class="callout">Uploaded files are served from <code>/uploads</code>. Prepend the backend origin to <code>fileUrl</code>, for example <code>http://localhost:1940/uploads/&lt;filename&gt;</code>.</div>
         </section>
 
-        <!-- PUBLIC -->
         <section id="public">
-            <h2>4. Public Data (<code>/public</code>)</h2>
-            <p>No authentication required. All responses are fully sanitized — <strong>no names, emails, or PII</strong> are ever returned.</p>
-            <div class="endpoint-group">
+            <h2>4. Public data <a class="heading-link" href="#public" aria-label="Link to Public data">#</a></h2>
+            <p>Base path: <code>/public</code>. No authentication is required. Public case responses use a strict field allowlist and never expose names, emails, lawyers, judges, or other personally identifiable information.</p>
+            <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+                        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Behavior</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/public/cases/:caseHashId</code></td><td>Fetches a public case by its <code>hashId</code> (format: <code>GAV-26-XXXXXX</code>). Returns: <code>caseNumber</code>, <code>title</code>, <code>description</code>, <code>stage</code>, <code>status</code>, <code>court</code>, <code>filingDate</code>, <code>hashId</code> only — no lawyer or judge data.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/public/scorecard</code></td><td>System stats: <code>totalCases</code>, <code>activeCases</code>, <code>resolvedCases</code>, <code>stalledCases</code>, <code>resolutionRate</code> (%).</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/public/backlog-map</code></td><td>Active + stalled counts grouped by <code>court</code>. Sorted by total backlog descending.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/public/trends</code></td><td>Monthly filing and resolution data. Each item: <code>{ period: "2026-01", filed: 5, resolved: 2 }</code>.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/public/cases/:caseHashId</code></td><td><span class="access">Public</span></td><td>Returns <code>caseNumber</code>, <code>title</code>, <code>description</code>, <code>stage</code>, <code>status</code>, <code>court</code>, <code>filingDate</code>, <code>hashId</code>, and timestamps.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/public/scorecard</code></td><td><span class="access">Public</span></td><td>Returns total, active, resolved, and stalled case counts plus resolution rate.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/public/backlog-map</code></td><td><span class="access">Public</span></td><td>Returns active and stalled counts grouped by court, sorted by total backlog descending.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/public/trends</code></td><td><span class="access">Public</span></td><td>Returns monthly items shaped as <code>{ period: "2026-01", filed: 5, resolved: 2 }</code>.</td></tr>
                     </tbody>
                 </table>
             </div>
-            <div class="warn">⚠️ <code>/public/cases/:caseHashId</code> uses the <strong>hashId</strong> (e.g. <code>GAV-26-8A3F9</code>), <strong>not</strong> the MongoDB <code>_id</code>.</div>
+            <div class="callout warning"><code>/public/cases/:caseHashId</code> requires the public hash ID, such as <code>GAV-26-8A3F9</code>, not the MongoDB <code>_id</code>.</div>
         </section>
 
-        <!-- WATCH -->
         <section id="watch">
-            <h2>5. Watch Subscriptions (<code>/watch</code>)</h2>
-            <p>Public users can subscribe to email alerts when a case status changes.</p>
-            <div class="endpoint-group">
+            <h2>5. Watch subscriptions <a class="heading-link" href="#watch" aria-label="Link to Watch subscriptions">#</a></h2>
+            <p>Public visitors can subscribe to case status updates by email.</p>
+            <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Body</th><th>Description</th></tr>
+                        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Body</th><th>Behavior</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/watch/:caseHashId</code></td><td>No</td><td><code>{ email }</code></td><td>Subscribes email to case updates. Returns <code>{ unsubscribeToken }</code> — save it for unsubscription later.</td></tr>
-                        <tr><td data-label="Method"><span class="method delete">DELETE</span></td><td><code>/watch/:idOrToken</code></td><td>No</td><td>—</td><td>Unsubscribes using the <code>unsubscribeToken</code> or the subscription MongoDB <code>_id</code>.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/watch/:caseHashId</code></td><td><span class="access">Public</span></td><td><code>{ email }</code></td><td>Subscribes the email and returns an unsubscribe token.</td></tr>
+                        <tr><td><span class="method delete">DELETE</span></td><td><code>/watch/:idOrToken</code></td><td><span class="access">Public</span></td><td>None</td><td>Unsubscribes using either the saved token or subscription MongoDB ID.</td></tr>
                     </tbody>
                 </table>
             </div>
-            <div class="endpoint-group">
-                <h3>Subscribe Response Example</h3>
+            <div class="card">
+                <h3>Subscription response</h3>
                 <pre><code>{
   "success": true,
   "message": "Successfully subscribed to case updates",
-  "data": { "unsubscribeToken": "a3f9e2b1..." }
+  "data": {
+    "unsubscribeToken": "a3f9e2b1..."
+  }
 }</code></pre>
+                <p>Save the unsubscribe token in the client so the user can later remove the subscription.</p>
             </div>
         </section>
 
-        <!-- PRO BONO -->
         <section id="pro-bono">
-            <h2>6. Pro-Bono Module (<code>/pro-bono</code>)</h2>
-            <p>Accessible to authenticated users with the <code>lawyer</code> role only.</p>
-            <div class="endpoint-group">
+            <h2>6. Pro-bono <a class="heading-link" href="#pro-bono" aria-label="Link to Pro-bono">#</a></h2>
+            <p>Base path: <code>/pro-bono</code>. Every endpoint requires an authenticated user with the <code>lawyer</code> role.</p>
+            <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+                        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Query</th><th>Behavior</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/pro-bono/cases</code></td><td>Unrepresented pro-bono cases. Filter: <code>?minDetentionDays=30</code> — shows cases where the accused has been detained for at least N days. Sorted by longest detention first.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/pro-bono/cases/:id/claim</code></td><td>Claims a pro-bono case. Adds the lawyer to the <code>lawyers</code> array and writes an audit log entry. Returns <code>400</code> if already claimed.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/pro-bono/my-claimed</code></td><td>Returns all pro-bono cases claimed by the currently authenticated lawyer.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/pro-bono/cases</code></td><td><span class="access">Lawyer</span></td><td><code>?minDetentionDays=30</code></td><td>Lists unrepresented pro-bono cases, optionally filtered by minimum detention days and sorted by longest detention.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/pro-bono/cases/:id/claim</code></td><td><span class="access">Lawyer</span></td><td>None</td><td>Claims a case, adds the current lawyer, and writes an audit entry. An already claimed case is rejected.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/pro-bono/my-claimed</code></td><td><span class="access">Lawyer</span></td><td>None</td><td>Lists pro-bono cases claimed by the current lawyer.</td></tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <!-- ANALYTICS -->
         <section id="analytics">
-            <h2>7. Admin Analytics (<code>/analytics</code>)</h2>
-            <p>Accessible to the <code>admin</code> role only.</p>
-            <div class="endpoint-group">
+            <h2>7. Admin analytics <a class="heading-link" href="#analytics" aria-label="Link to Admin analytics">#</a></h2>
+            <p>Base path: <code>/analytics</code>. All endpoints require the <code>admin</code> role.</p>
+            <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+                        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Behavior</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/analytics/overview</code></td><td>Total/active/pro-bono case counts + user totals and role distribution breakdown.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/analytics/heatmap</code></td><td>Case count grouped by <code>{ court, stage }</code>. Excludes <code>Closed</code> cases. Useful for court congestion maps.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/analytics/trends</code></td><td>Monthly breakdown of status transitions from <code>StatusHistory</code>. Each item: <code>{ _id: { year, month, status }, count }</code>.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/analytics/overview</code></td><td><span class="access">Admin</span></td><td>Returns total, active, and pro-bono case counts plus user totals and role distribution.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/analytics/heatmap</code></td><td><span class="access">Admin</span></td><td>Returns case counts grouped by court and stage, excluding closed cases.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/analytics/trends</code></td><td><span class="access">Admin</span></td><td>Returns monthly status-transition counts from <code>StatusHistory</code>.</td></tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <!-- USERS -->
         <section id="users">
-            <h2>8. User Management (<code>/users</code>)</h2>
-            <p>Accessible to the <code>admin</code> role only.</p>
-            <div class="endpoint-group">
+            <h2>8. User management <a class="heading-link" href="#users" aria-label="Link to User management">#</a></h2>
+            <p>Base path: <code>/users</code>. All endpoints require the <code>admin</code> role.</p>
+            <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Method</th><th>Endpoint</th><th>Body / Query</th><th>Description</th></tr>
+                        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Body or query</th><th>Behavior</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/users</code></td><td><code>?role=lawyer&amp;page=1&amp;limit=20</code></td><td>Paginated list of all users, filterable by role.</td></tr>
-                        <tr><td data-label="Method"><span class="method post">POST</span></td><td><code>/users/invite</code></td><td><code>{ email, firstName, lastName, role, court? }</code></td><td>Creates account with auto-generated temp password. Sends invite email. Account is pre-verified.</td></tr>
-                        <tr><td data-label="Method"><span class="method patch">PATCH</span></td><td><code>/users/:id</code></td><td><code>{ firstName?, lastName?, role?, phoneNumber?, isActive? }</code></td><td>Updates user fields. Cannot update <code>password</code> through this endpoint.</td></tr>
-                        <tr><td data-label="Method"><span class="method patch">PATCH</span></td><td><code>/users/:id/suspend</code></td><td><code>{ reason? }</code></td><td>Suspends user, increments tokenVersion to invalidate existing tokens immediately, and logs action. Prevents self-suspension.</td></tr>
-                        <tr><td data-label="Method"><span class="method patch">PATCH</span></td><td><code>/users/:id/reactivate</code></td><td>—</td><td>Reactivates a suspended user and logs action.</td></tr>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/users/:id/audit-log</code></td><td>—</td><td>Returns user suspension and reactivation history.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/users</code></td><td><span class="access">Admin</span></td><td><code>?role=lawyer&amp;page=1&amp;limit=20</code></td><td>Returns a paginated list of users, optionally filtered by role.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/users/invite</code></td><td><span class="access">Admin</span></td><td><code>{ email, firstName, lastName, role, court? }</code></td><td>Creates a pre-verified account with a generated temporary password and attempts to email the invitation.</td></tr>
+                        <tr><td><span class="method patch">PATCH</span></td><td><code>/users/:id</code></td><td><span class="access">Admin</span></td><td><code>{ firstName?, lastName?, role?, phoneNumber?, isActive? }</code></td><td>Updates general user fields. Password changes are blocked on this endpoint.</td></tr>
+                        <tr><td><span class="method patch">PATCH</span></td><td><code>/users/:id/suspend</code></td><td><span class="access">Admin</span></td><td><code>{ reason? }</code></td><td>Suspends the user, invalidates existing access tokens, records the actor/reason, and blocks self-suspension.</td></tr>
+                        <tr><td><span class="method patch">PATCH</span></td><td><code>/users/:id/reactivate</code></td><td><span class="access">Admin</span></td><td>None</td><td>Reactivates a suspended account and records the administrator.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/users/:id/audit-log</code></td><td><span class="access">Admin</span></td><td>None</td><td>Returns the user's suspension and reactivation history.</td></tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <!-- HEALTH -->
-        <section id="health">
-            <h2>9. System Health (<code>/health</code>)</h2>
-            <div class="endpoint-group">
+        <section id="contact">
+            <h2>9. Contact and issue reporting <a class="heading-link" href="#contact" aria-label="Link to Contact and issue reporting">#</a></h2>
+            <p>Base path: <code>/contact</code>. Anyone can submit a message. Reading or updating the inbox requires an administrator.</p>
+            <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+                        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Body or query</th><th>Behavior</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td data-label="Method"><span class="method get">GET</span></td><td><code>/health</code></td><td>No</td><td>Returns <code>{ status: 'UP', timestamp: &lt;ms&gt; }</code>. Use for uptime/ping checks.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/contact</code></td><td><span class="access">Public</span></td><td><code>{ name?, email, category, message }</code></td><td>Trims and validates input, saves the message, then attempts to notify the configured administrator.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/contact/messages</code></td><td><span class="access">Admin</span></td><td><code>?page=1&amp;limit=20&amp;status=new&amp;category=privacy_concern</code></td><td>Returns messages newest first with optional status/category filters and pagination. Maximum limit is 100.</td></tr>
+                        <tr><td><span class="method patch">PATCH</span></td><td><code>/contact/messages/:id/status</code></td><td><span class="access">Admin</span></td><td><code>{ status, adminNotes? }</code></td><td>Updates inbox status and optional notes. Resolving records the administrator and resolution time.</td></tr>
                     </tbody>
                 </table>
             </div>
-        </section>
 
-        <!-- RESPONSE FORMAT -->
-        <section id="response">
-            <h2>Standard Response Format</h2>
+            <div class="card">
+                <h3>Submit a message</h3>
+                <pre><code>POST /api/v1/contact
+Content-Type: application/json
 
-            <div class="endpoint-group">
-                <h3>✅ Success Response (2xx)</h3>
+{
+  "name": "Optional sender name",
+  "email": "sender@example.com",
+  "category": "privacy_concern",
+  "message": "Message text"
+}</code></pre>
+                <p><code>email</code>, <code>category</code>, and <code>message</code> are required. Every string is trimmed. Messages may contain up to 5000 characters.</p>
+                <p class="mini-title">Allowed categories</p>
+                <div class="badge-list">
+                    <span class="badge">general_question</span>
+                    <span class="badge">report_issue</span>
+                    <span class="badge">privacy_concern</span>
+                    <span class="badge">case_information_concern</span>
+                    <span class="badge">volunteer_legal_aid</span>
+                </div>
                 <pre><code>{
   "success": true,
-  "message": "Operation successful",
-  "data": { ... }
+  "message": "Message sent successfully",
+  "data": {
+    "messageId": "..."
+  }
+}</code></pre>
+                <div class="callout success">The database save happens first. If notification delivery fails, the failure is logged internally and the saved submission still returns <code>201</code>.</div>
+            </div>
+
+            <div class="card">
+                <h3>List the admin inbox</h3>
+                <pre><code>GET /api/v1/contact/messages?page=1&amp;limit=20&amp;status=new&amp;category=privacy_concern
+Authorization: Bearer &lt;adminAccessToken&gt;</code></pre>
+                <pre><code>{
+  "success": true,
+  "message": "Contact messages retrieved successfully",
+  "data": {
+    "messages": [],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 0,
+      "pages": 0
+    }
+  }
 }</code></pre>
             </div>
 
-            <div class="endpoint-group">
-                <h3>⚠️ Validation Error (422)</h3>
-                <p>Returned when request body fails field-level validation rules.</p>
+            <div class="card">
+                <h3>Update message status</h3>
+                <p>Allowed statuses are <code>new</code>, <code>in_review</code>, <code>resolved</code>, and <code>closed</code>.</p>
+                <pre><code>PATCH /api/v1/contact/messages/:id/status
+Authorization: Bearer &lt;adminAccessToken&gt;
+Content-Type: application/json
+
+{
+  "status": "in_review",
+  "adminNotes": "Optional note"
+}</code></pre>
+                <pre><code>{
+  "success": true,
+  "message": "Contact message updated successfully",
+  "data": {
+    "message": {
+      "_id": "...",
+      "status": "in_review"
+    }
+  }
+}</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Email notification configuration</h3>
+                <pre><code>CONTACT_NOTIFICATION_EMAIL=admin@example.com</code></pre>
+                <p>The subject format is <code>[GAVEL Contact] &lt;Category Label&gt; from &lt;sender email&gt;</code>. The email includes the sender name or “Not provided”, sender email, category label, message, creation date/time, and message ID.</p>
+                <p>SMTP delivery uses <code>EMAIL_HOST</code>, <code>EMAIL_PORT</code>, <code>EMAIL_USER</code>, <code>EMAIL_PASS</code>, and <code>EMAIL_FROM</code>.</p>
+            </div>
+        </section>
+
+        <section id="health">
+            <h2>10. System health <a class="heading-link" href="#health" aria-label="Link to System health">#</a></h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Behavior</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td><span class="access">Public</span></td><td>Returns <code>{ status: "UP", timestamp: &lt;milliseconds&gt; }</code> for uptime and readiness checks.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="responses">
+            <h2>Standard response formats <a class="heading-link" href="#responses" aria-label="Link to Response formats">#</a></h2>
+            <p>Frontend integrations can consistently read <code>success</code> and <code>message</code>. Successful operations include <code>data</code> when they return a resource. Validation failures may additionally include field-level <code>errors</code>.</p>
+            <div class="response-grid">
+                <div class="card">
+                    <h3>Success (2xx)</h3>
+                    <pre><code>{
+  "success": true,
+  "message": "Operation successful",
+  "data": { }
+}</code></pre>
+                </div>
+                <div class="card">
+                    <h3>General error (4xx / 5xx)</h3>
+                    <pre><code>{
+  "success": false,
+  "message": "Error description"
+}</code></pre>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Validation error (422)</h3>
                 <pre><code>{
   "success": false,
   "message": "Validation failed",
@@ -512,36 +1160,36 @@ FHC/001/2026,"Land Dispute Case","Lagos High Court",Pre-Trial,Active,false</code
     "password": "Password must be at least 8 characters long"
   }
 }</code></pre>
-            </div>
-
-            <div class="endpoint-group">
-                <h3>❌ General Error (4xx / 5xx)</h3>
-                <pre><code>{
-  "success": false,
-  "message": "Error description"
-  // In development mode, a "stack" field is also included on 500 errors
-}</code></pre>
-            </div>
-
-            <div class="endpoint-group">
-                <h3>HTTP Status Codes</h3>
-                <table>
-                    <thead><tr><th>Code</th><th>Meaning</th></tr></thead>
-                    <tbody>
-                        <tr><td><code>200</code></td><td>OK — Request successful</td></tr>
-                        <tr><td><code>201</code></td><td>Created — Resource created</td></tr>
-                        <tr><td><code>400</code></td><td>Bad Request — Invalid input or business logic error</td></tr>
-                        <tr><td><code>401</code></td><td>Unauthorized — Missing, invalid, or expired token</td></tr>
-                        <tr><td><code>403</code></td><td>Forbidden — Authenticated but insufficient role</td></tr>
-                        <tr><td><code>404</code></td><td>Not Found — Resource doesn't exist</td></tr>
-                        <tr><td><code>422</code></td><td>Unprocessable Entity — Validation failed (<code>errors</code> object in response)</td></tr>
-                        <tr><td><code>429</code></td><td>Too Many Requests — Rate limit exceeded</td></tr>
-                        <tr><td><code>500</code></td><td>Internal Server Error</td></tr>
-                    </tbody>
-                </table>
+                <div class="callout warning">Development-mode server errors may include a <code>stack</code> field. Production responses do not expose stack traces.</div>
             </div>
         </section>
 
+        <section id="status-codes">
+            <h2>HTTP status codes <a class="heading-link" href="#status-codes" aria-label="Link to HTTP status codes">#</a></h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Code</th><th>Name</th><th>Meaning</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>200</code></td><td>OK</td><td>The request completed successfully.</td></tr>
+                        <tr><td><code>201</code></td><td>Created</td><td>A resource was created successfully.</td></tr>
+                        <tr><td><code>400</code></td><td>Bad Request</td><td>The request violates input or business rules.</td></tr>
+                        <tr><td><code>401</code></td><td>Unauthorized</td><td>The access token is missing, invalid, expired, or invalidated.</td></tr>
+                        <tr><td><code>403</code></td><td>Forbidden</td><td>The authenticated role is not allowed, or a public signup attempted a forbidden role.</td></tr>
+                        <tr><td><code>404</code></td><td>Not Found</td><td>The requested route or resource does not exist.</td></tr>
+                        <tr><td><code>422</code></td><td>Unprocessable Entity</td><td>Field validation failed; inspect the response <code>errors</code> object.</td></tr>
+                        <tr><td><code>429</code></td><td>Too Many Requests</td><td>The API rate limit was exceeded.</td></tr>
+                        <tr><td><code>500</code></td><td>Internal Server Error</td><td>An unexpected server error occurred.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <a class="top-link" href="#top">Back to top</a>
+        </section>
+
+        <footer>
+            GAVEL API reference. All endpoint paths are relative to <code>/api/v1</code>.
+        </footer>
     </main>
 </body>
 </html>
