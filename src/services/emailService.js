@@ -1,5 +1,13 @@
 const nodemailer = require('nodemailer');
 const env = require('../config/env');
+const { CONTACT_CATEGORY_LABELS } = require('../constants/contact');
+
+const escapeHtml = (value) => String(value)
+  .replaceAll('&', '&amp;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;')
+  .replaceAll("'", '&#039;');
 
 class EmailService {
   constructor() {
@@ -100,6 +108,49 @@ class EmailService {
     `;
 
     return this.sendEmail({ to: user.email, subject, text, html });
+  }
+
+  /**
+   * Notify the configured administrator about a persisted contact message.
+   * @param {Object} contactMessage - Persisted ContactMessage document
+   */
+  async sendContactNotification(contactMessage) {
+    if (!env.CONTACT_NOTIFICATION_EMAIL) {
+      throw new Error('CONTACT_NOTIFICATION_EMAIL is not configured');
+    }
+
+    const categoryLabel = CONTACT_CATEGORY_LABELS[contactMessage.category] || contactMessage.category;
+    const senderName = contactMessage.name || 'Not provided';
+    const createdAt = new Date(contactMessage.createdAt).toISOString();
+    const messageId = contactMessage._id.toString();
+    const subject = `[GAVEL Contact] ${categoryLabel} from ${contactMessage.email}`;
+    const text = [
+      `Name: ${senderName}`,
+      `Email: ${contactMessage.email}`,
+      `Category: ${categoryLabel}`,
+      `Message: ${contactMessage.message}`,
+      `Created: ${createdAt}`,
+      `Message ID: ${messageId}`
+    ].join('\n\n');
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
+        <h2>New GAVEL Contact Message</h2>
+        <p><strong>Name:</strong> ${escapeHtml(senderName)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(contactMessage.email)}</p>
+        <p><strong>Category:</strong> ${escapeHtml(categoryLabel)}</p>
+        <p><strong>Message:</strong></p>
+        <p style="white-space: pre-wrap;">${escapeHtml(contactMessage.message)}</p>
+        <p><strong>Created:</strong> ${escapeHtml(createdAt)}</p>
+        <p><strong>Message ID:</strong> ${escapeHtml(messageId)}</p>
+      </div>
+    `;
+
+    return this.sendEmail({
+      to: env.CONTACT_NOTIFICATION_EMAIL,
+      subject,
+      text,
+      html
+    });
   }
 }
 

@@ -7,6 +7,7 @@ const proBonoRoutes = require('./proBono.routes');
 const watchRoutes = require('./watch.routes');
 const analyticsRoutes = require('./analytics.routes');
 const publicRoutes = require('./public.routes');
+const contactRoutes = require('./contact.routes');
 
 const router = express.Router();
 
@@ -23,5 +24,6 @@ router.use('/pro-bono', proBonoRoutes);
 router.use('/watch', watchRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/public', publicRoutes);
+router.use('/contact', contactRoutes);
 
 module.exports = router;

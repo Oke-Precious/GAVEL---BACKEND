@@ -25,6 +25,12 @@ const setRefreshTokenCookie = (res, token) => {
 exports.register = asyncHandler(async (req, res) => {
   const { firstName, lastName, email, password, role, phoneNumber, barNumber } = req.body;
 
+  // Public registration is intentionally limited to volunteer lawyers. Other
+  // roles must be provisioned through the admin invitation flow.
+  if (role !== undefined && role !== 'lawyer') {
+    return sendError(res, 403, 'Public signup is only available for volunteer lawyers.');
+  }
+
   // Check if user exists
   let user = await User.findOne({ email });
   if (user) {
@@ -37,27 +43,44 @@ exports.register = asyncHandler(async (req, res) => {
     lastName,
     email,
     password,
-    role: role || 'public',
+    role: 'lawyer',
     phoneNumber,
     barNumber
   });
 
-  // Generate Email Verification Token
-  const verificationToken = user.createEmailVerificationToken();
-  await user.save({ validateBeforeSave: false });
+  let verificationEmailSent = false;
 
-  // Send verification email
+  // Account creation is the committed operation. Verification setup and email
+  // delivery are best-effort so an SMTP outage cannot turn a successful signup
+  // into a failed API response.
   try {
+    const verificationToken = user.createEmailVerificationToken();
+    await user.save({ validateBeforeSave: false });
     await emailService.sendVerificationEmail(user, verificationToken);
+    verificationEmailSent = true;
   } catch (error) {
-    console.error('Email sending failed', error);
-    // Note: User is created but email failed. In prod, you might want to retry or let them request it again.
+    console.error('Registration verification email failed', {
+      userId: user._id,
+      email: user.email,
+      error: error.message
+    });
   }
 
-  // Return success (excluding password)
-  const userData = await User.findById(user._id);
+  // Build the response from the already-created document to avoid another
+  // database operation becoming a post-creation failure point.
+  const userData = typeof user.toObject === 'function' ? user.toObject() : { ...user };
+  delete userData.password;
+  delete userData.emailVerificationToken;
+  delete userData.emailVerificationExpires;
+  delete userData.resetPasswordToken;
+  delete userData.resetPasswordExpires;
+  delete userData.refreshToken;
 
-  sendSuccess(res, 201, 'Registration successful. Please check your email to verify your account.', {
+  const message = verificationEmailSent
+    ? 'Registration successful. Please check your email to verify your account.'
+    : 'Account created, but verification email could not be sent. Please request a new verification email.';
+
+  sendSuccess(res, 201, message, {
     user: userData
   });
 });

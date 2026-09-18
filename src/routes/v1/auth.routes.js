@@ -14,6 +14,7 @@ const {
 
 const { protect } = require('../../middleware/auth');
 const validate = require('../../middleware/validate');
+const { sendError } = require('../../utils/apiResponse');
 
 const router = express.Router();
 
@@ -27,11 +28,19 @@ const registerValidation = [
     .withMessage('Password must be at least 8 characters long'),
   body('role')
     .optional()
-    .isIn(['admin', 'judge', 'lawyer', 'clerk', 'litigant', 'public'])
-    .withMessage('Invalid role specified'),
+    .isIn(['lawyer'])
+    .withMessage('Public signup is only available for volunteer lawyers.'),
   body('phoneNumber').optional().isString(),
   body('barNumber').optional().isString(),
 ];
+
+const enforcePublicSignupRole = (req, res, next) => {
+  if (req.body.role !== undefined && req.body.role !== 'lawyer') {
+    return sendError(res, 403, 'Public signup is only available for volunteer lawyers.');
+  }
+
+  next();
+};
 
 const loginValidation = [
   body('email').isEmail().withMessage('Please provide a valid email address').normalizeEmail(),
@@ -49,7 +58,7 @@ const resetPasswordValidation = [
 ];
 
 // Routes
-router.post('/register', registerValidation, validate, register);
+router.post('/register', enforcePublicSignupRole, registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
 router.post('/logout', protect, logout);
 router.post('/refresh-token', refreshToken);

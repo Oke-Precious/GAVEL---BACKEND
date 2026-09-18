@@ -19,6 +19,7 @@ module.exports = {
   EMAIL_USER: process.env.EMAIL_USER,
   EMAIL_PASS: process.env.EMAIL_PASS,
   EMAIL_FROM: process.env.EMAIL_FROM || '"GAVEL <no-reply@gavel.app>"',
+  CONTACT_NOTIFICATION_EMAIL: process.env.CONTACT_NOTIFICATION_EMAIL,
   
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000, // 15 min
   RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX) || 100

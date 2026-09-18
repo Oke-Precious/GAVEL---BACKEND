@@ -85,7 +85,7 @@ The following frontend origins are allowed without any extra configuration:
 
 | Method | Endpoint | Auth Required | Request Body | Description |
 |---|---|---|---|---|
-| `POST` | `/auth/register` | No | `{ firstName, lastName, email, password, role?, phoneNumber?, barNumber? }` | Registers a new user. Default role is `public`. Sends a verification email. |
+| `POST` | `/auth/register` | No | `{ firstName, lastName, email, password, role?, phoneNumber?, barNumber? }` | Registers a volunteer lawyer. The role is always `lawyer`; other roles must use the admin invite flow. |
 | `POST` | `/auth/login` | No | `{ email, password }` | Authenticates user and returns `accessToken`, `refreshToken`, and sets `refreshToken` HTTP-only cookie. |
 | `POST` | `/auth/logout` | Yes | — | Clears refresh token from DB and cookie. |
 | `POST` | `/auth/refresh-token` | No | `{ refreshToken? }` (or via cookie) | Issues a new access + refresh token pair (token rotation). Send either via cookie or JSON body. |
@@ -94,6 +94,33 @@ The following frontend origins are allowed without any extra configuration:
 | `POST` | `/auth/reset-password/:token` | No | `{ password }` | Resets the user's password. Token is valid for **10 minutes**. |
 | `GET` | `/auth/verify-email/:token` | No | — | Verifies email address. **Browser requests redirect to `CLIENT_URL/login?verified=true`**. API calls (non-HTML `Accept` headers) get JSON. |
 | `POST` | `/auth/resend-verification` | No | `{ email }` | Resends verification email. |
+
+### Public Registration Policy
+
+Public self-signup is only available to volunteer lawyers. If `role` is omitted, the account is created with the `lawyer` role. Supplying any other role, including `admin`, `judge`, or `clerk`, returns `403`:
+
+```json
+{
+  "success": false,
+  "message": "Public signup is only available for volunteer lawyers."
+}
+```
+
+Legal Aid Officers, Records Officers, administrators, and all other non-lawyer roles must be created by an administrator with `POST /users/invite`.
+
+Registration commits the user account before attempting verification email delivery. If delivery fails, the account remains created and the API still returns `201` with the normal `{ success, message, data }` shape:
+
+```json
+{
+  "success": true,
+  "message": "Account created, but verification email could not be sent. Please request a new verification email.",
+  "data": {
+    "user": { "_id": "...", "email": "lawyer@example.com", "role": "lawyer" }
+  }
+}
+```
+
+The user can then call `POST /auth/resend-verification`. Verification email failures are logged internally and never change a successfully created registration into an error response.
 
 ### Login Response Example
 ```json
@@ -226,7 +253,89 @@ Accessible to `admin` role only.
 
 ---
 
-## 9. System Health
+## 9. Contact / Report Issue (`/contact`)
+
+### Submit a Contact Message
+
+`POST /contact` is public and does not require authentication.
+
+```json
+{
+  "name": "Optional sender name",
+  "email": "sender@example.com",
+  "category": "privacy_concern",
+  "message": "Message text"
+}
+```
+
+Allowed categories are `general_question`, `report_issue`, `privacy_concern`, `case_information_concern`, and `volunteer_legal_aid`. All strings are trimmed. `email`, `category`, and `message` are required, and `message` has a maximum length of 5000 characters.
+
+The message is saved before an email notification is attempted. A notification failure is logged internally and does not fail a successfully saved request.
+
+Success (`201`):
+
+```json
+{
+  "success": true,
+  "message": "Message sent successfully",
+  "data": {
+    "messageId": "..."
+  }
+}
+```
+
+### Admin Contact Inbox
+
+These endpoints require a valid admin bearer token.
+
+| Method | Endpoint | Body / Query | Description |
+|---|---|---|---|
+| `GET` | `/contact/messages` | `?page=1&limit=20&status=new&category=privacy_concern` | Lists messages newest first. `limit` may be 1–100. Filters are optional. |
+| `PATCH` | `/contact/messages/:id/status` | `{ status, adminNotes? }` | Updates status and optional notes. Allowed statuses: `new`, `in_review`, `resolved`, `closed`. |
+
+List response:
+
+```json
+{
+  "success": true,
+  "message": "Contact messages retrieved successfully",
+  "data": {
+    "messages": [],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 0,
+      "pages": 0
+    }
+  }
+}
+```
+
+Status update response:
+
+```json
+{
+  "success": true,
+  "message": "Contact message updated successfully",
+  "data": {
+    "message": { "_id": "...", "status": "in_review" }
+  }
+}
+```
+
+### Contact Notification Configuration
+
+Set the administrator recipient in the backend environment:
+
+```env
+CONTACT_NOTIFICATION_EMAIL=admin@example.com
+```
+
+The notification subject is `[GAVEL Contact] <Category Label> from <sender email>` and includes the sender name, email, category, message, created time, and message ID. Existing SMTP variables (`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM`) control delivery.
+
+---
+
+## 10. System Health
 
 | Method | Endpoint | Auth Required | Description |
 |---|---|---|---|
