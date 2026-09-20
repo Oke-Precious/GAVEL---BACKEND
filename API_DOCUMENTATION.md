@@ -16,10 +16,13 @@ npm install
 # 2. Seed the database with demo users and sample cases
 npm run seed
 
-# 3. Start dev server (with auto-reload)
+# 3. Optional: create the first super administrator from .env
+npm run create-super-admin
+
+# 4. Start dev server (with auto-reload)
 npm run dev
 
-# 4. Run unit tests
+# 5. Run unit tests
 npm test
 ```
 
@@ -28,7 +31,8 @@ All accounts share the password: **`Password123!`**
 
 | Role | Email | Notes |
 |---|---|---|
-| `admin` | admin@gavel.app | Full system access |
+| `super_admin` | superadmin@gavel.app | Platform owner; can create/manage admins and permanently delete eligible users |
+| `admin` | admin@gavel.app | Management access except admin creation and user deletion |
 | `judge` | judge@gavel.app | Assigned cases scoped automatically |
 | `lawyer` | lawyer@gavel.app | Can claim pro-bono cases |
 | `clerk` | clerk@gavel.app | Case filing & document uploads |
@@ -36,12 +40,57 @@ All accounts share the password: **`Password123!`**
 
 ---
 
+## Environment Configuration
+
+Copy `.env.example` to `.env` and replace every placeholder before starting the backend. Never commit `.env` or expose SMTP/JWT/database secrets.
+
+```env
+# Application
+PORT=1940
+NODE_ENV=development
+CLIENT_URL=http://localhost:5173
+BACKEND_URL=http://localhost:1940
+
+# Database
+MONGO_URI=your_mongodb_atlas_connection_string
+
+# Authentication
+JWT_SECRET=replace_with_long_random_string
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_SECRET=replace_with_a_different_long_random_string
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Brevo SMTP
+EMAIL_HOST=smtp-relay.brevo.com
+EMAIL_PORT=587
+EMAIL_USER=your-brevo-smtp-login@smtp-brevo.com
+EMAIL_PASS=your-brevo-smtp-key
+EMAIL_FROM="GAVEL <your-verified-sender@example.com>"
+CONTACT_NOTIFICATION_EMAIL=your-admin-recipient@example.com
+
+# Super-admin bootstrap
+SUPER_ADMIN_EMAIL=superadmin@example.com
+SUPER_ADMIN_PASSWORD=replace_with_at_least_12_characters
+SUPER_ADMIN_FIRST_NAME=System
+SUPER_ADMIN_LAST_NAME=Super Admin
+
+# Rate limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=100
+```
+
+`CLIENT_URL` controls browser redirects and CORS. `BACKEND_URL` is embedded in verification-email links, so production must use the public HTTPS backend URL rather than `localhost`. Render environment variables must be configured separately from the local `.env` file, followed by a restart or redeploy.
+
+---
+
 ## 🔒 Authentication & Authorization
 
 - **JWT Bearer Token**: Send `Authorization: Bearer <accessToken>` in request headers.
 - **HTTP-Only Cookie**: A `refreshToken` cookie is set automatically on login. Ensure `withCredentials: true` is configured in your HTTP client (e.g. Axios).
-- **Roles**: `admin`, `judge`, `lawyer`, `clerk`, `litigant`, `public`. Role-restricted routes return `403` if the user's role is not permitted.
-- **Token Expiry**: Access tokens expire in **30 minutes**. Use `POST /auth/refresh-token` to obtain a new one.
+- **Roles**: `super_admin`, `admin`, `judge`, `lawyer`, `clerk`, `litigant`, `public`. Role-restricted routes return `403` if the user's role is not permitted.
+- **Super Administrator**: Has access to every role-restricted endpoint. Only a super administrator may create/manage administrators or permanently delete users.
+- **Administrator**: Can manage ordinary users but cannot create/promote administrators, delete users, or manage a super-administrator account.
+- **Token Expiry**: Access-token lifetime is controlled by `JWT_EXPIRES_IN` and defaults to **15 minutes** (`15m`). Use `POST /auth/refresh-token` to obtain a new pair.
 
 ### Recommended Axios Setup
 ```js
@@ -106,7 +155,7 @@ Public self-signup is only available to volunteer lawyers. If `role` is omitted,
 }
 ```
 
-Legal Aid Officers, Records Officers, administrators, and all other non-lawyer roles must be created by an administrator with `POST /users/invite`.
+Legal Aid Officers, Records Officers, and other non-lawyer roles must be created with `POST /users/invite`. Only a super administrator may use that endpoint to create an `admin` account. A `super_admin` account can only be created with the secure bootstrap command documented below.
 
 Registration commits the user account before attempting verification email delivery. If delivery fails, the account remains created and the API still returns `201` with the normal `{ success, message, data }` shape:
 
@@ -121,6 +170,27 @@ Registration commits the user account before attempting verification email deliv
 ```
 
 The user can then call `POST /auth/resend-verification`. Verification email failures are logged internally and never change a successfully created registration into an error response.
+
+### Verification Email Configuration and Troubleshooting
+
+The project is configured for Brevo SMTP. Copy the exact **SMTP Login** from Brevo's **Settings > SMTP & API > SMTP** page and generate an SMTP key. Do not use a Brevo API key or the Brevo account password.
+
+```env
+EMAIL_HOST=smtp-relay.brevo.com
+EMAIL_PORT=587
+EMAIL_USER=your-brevo-smtp-login@smtp-brevo.com
+EMAIL_PASS=your-brevo-smtp-key
+EMAIL_FROM="GAVEL <your-verified-sender@example.com>"
+BACKEND_URL=https://your-backend.example.com
+```
+
+Do not set `EMAIL_SERVICE=brevo`; Brevo is selected with `EMAIL_HOST`. `EMAIL_USER` is the Brevo SMTP login and is normally different from the visible sender. `EMAIL_FROM` must be listed as a verified Brevo sender. A verified Gmail address can be used during development, but Brevo may rewrite it and inbox placement may be reduced; use a custom DKIM/DMARC-authenticated domain in production.
+
+If Brevo returns `525 5.7.1 Unauthorized IP address`, either deactivate SMTP IP blocking for development or authorize every calling address under **Settings > Security > Authorized IPs**. A deployed Render service uses its own outbound IP ranges, available from the service's **Connect > Outbound** tab; authorizing only the developer computer will not fix production delivery. A `535` response instead indicates an incorrect SMTP login or SMTP key.
+
+In production, missing or rejected transport configuration is treated as a delivery failure and registration returns the degraded-success message shown above. After changing local environment variables, fully restart the backend. After changing Render variables, restart or redeploy the service.
+
+Useful server logs include `Email submitted to SMTP provider`, accepted/rejected recipient counts, and `Registration verification email failed`. An SMTP `250 OK` response means the provider queued the message, but the recipient provider may still place it in spam or quarantine.
 
 ### Login Response Example
 ```json
@@ -228,7 +298,7 @@ Accessible to authenticated users with the `lawyer` role only.
 
 ## 7. Admin Analytics Module (`/analytics`)
 
-Accessible to `admin` role only.
+Accessible to `admin` and `super_admin` roles.
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -240,16 +310,100 @@ Accessible to `admin` role only.
 
 ## 8. User Management (`/users`)
 
-Accessible to `admin` role only.
+Accessible to `admin` and `super_admin` roles. Super administrators have full access. Regular administrators can manage non-admin users, but cannot delete users, create or promote administrators, or manage super-administrator accounts.
 
-| Method | Endpoint | Request Body / Query | Description |
-|---|---|---|---|
-| `GET` | `/users` | `?role=lawyer&page=1&limit=20` | Paginated list of all users, filterable by role. |
-| `POST` | `/users/invite` | `{ email, firstName, lastName, role, court? }` | Creates an account with a secure auto-generated temp password and sends an invite email. Account is pre-verified. |
-| `PATCH` | `/users/:id` | `{ firstName?, lastName?, role?, phoneNumber?, isActive? }` | Updates user fields. Cannot update `password` through this endpoint. |
-| `PATCH` | `/users/:id/suspend` | `{ reason? }` | Suspends a user account, invalidates existing sessions, and logs action. Self-suspension blocked. Returns count of active assigned cases. |
-| `PATCH` | `/users/:id/reactivate` | — | Reactivates a suspended user account and logs action. |
-| `GET` | `/users/:id/audit-log` | — | Returns user suspension and reactivation history. |
+| Method | Endpoint | Access | Request Body / Query | Description |
+|---|---|---|---|---|
+| `GET` | `/users` | Admin / Super Admin | `?role=lawyer&page=1&limit=20` | Paginated users, filterable by role. Regular admins do not receive super-admin accounts. |
+| `POST` | `/users/invite` | Admin / Super Admin | `{ email, firstName, lastName, role, court? }` | Creates a pre-verified account with a temporary password. Only super admins may create an `admin`; `super_admin` cannot be assigned here. |
+| `PATCH` | `/users/:id` | Admin / Super Admin | `{ firstName?, lastName?, role?, phoneNumber?, barNumber? }` | Updates supported profile fields. Only a super admin may edit an admin or assign the `admin` role. The `super_admin` role cannot be assigned through the API. |
+| `PATCH` | `/users/:id/suspend` | Admin / Super Admin | `{ reason? }` | Suspends a user and invalidates sessions. Only a super admin may suspend an admin; that operation requires a reason of at least 10 characters. Self-suspension is blocked. |
+| `PATCH` | `/users/:id/reactivate` | Admin / Super Admin | — | Reactivates a suspended user. Only a super admin may reactivate an admin. |
+| `GET` | `/users/:id/audit-log` | Admin / Super Admin | — | Returns suspension/reactivation history, subject to the same management hierarchy. |
+| `GET` | `/users/:id/deletion-check` | Super Admin | — | Returns eligibility, dependency counts, and the exact confirmation phrase required before permanent deletion. |
+| `DELETE` | `/users/:id` | Super Admin | `{ reason, confirmation }` | Permanently deletes an eligible non-super-admin user. A reason and exact confirmation phrase are mandatory. |
+
+### Create the First Super Administrator
+
+Super administrators cannot be created or promoted through an HTTP endpoint. Configure these environment variables and run the one-time, non-destructive bootstrap command:
+
+```env
+SUPER_ADMIN_EMAIL=superadmin@example.com
+SUPER_ADMIN_PASSWORD=replace_with_at_least_12_characters
+SUPER_ADMIN_FIRST_NAME=System
+SUPER_ADMIN_LAST_NAME=Super Admin
+```
+
+```bash
+npm run create-super-admin
+```
+
+The command refuses to overwrite an existing non-super-admin account and reports success without creating a duplicate if the super administrator already exists. The development seed also creates `superadmin@gavel.app` with the shared demo password.
+
+### Permanent User Deletion
+
+Deletion is intentionally a two-step, super-admin-only operation. It cannot delete the current account or any account with the `super_admin` role.
+
+First, fetch the required phrase and dependency check:
+
+```http
+GET /users/507f1f77bcf86cd799439011/deletion-check
+Authorization: Bearer <superAdminAccessToken>
+```
+
+```json
+{
+  "success": true,
+  "message": "User deletion check completed",
+  "data": {
+    "user": {
+      "id": "507f1f77bcf86cd799439011",
+      "email": "test-lawyer@example.com",
+      "role": "lawyer"
+    },
+    "canDelete": true,
+    "requiredConfirmation": "DELETE test-lawyer@example.com",
+    "dependencies": {
+      "assignedCases": 0,
+      "uploadedDocuments": 0,
+      "statusChanges": 0,
+      "hearings": 0,
+      "adjournments": 0,
+      "resolvedContacts": 0,
+      "administrativeActions": 0,
+      "managedUsers": 0
+    }
+  }
+}
+```
+
+Then submit the exact, case-sensitive phrase and a meaningful reason of 10–500 characters:
+
+```http
+DELETE /users/507f1f77bcf86cd799439011
+Authorization: Bearer <superAdminAccessToken>
+Content-Type: application/json
+```
+
+```json
+{
+  "reason": "Removing disposable account created during signup testing",
+  "confirmation": "DELETE test-lawyer@example.com"
+}
+```
+
+```json
+{
+  "success": true,
+  "message": "User deleted successfully",
+  "data": {
+    "deletedUserId": "507f1f77bcf86cd799439011",
+    "deletedEmail": "test-lawyer@example.com"
+  }
+}
+```
+
+Deletion returns `409 Conflict` if the user is assigned to cases or owns operational records such as uploads, status changes, hearings, adjournments, resolved contacts, or administrative actions. Reassign those records first. Every deletion attempt that reaches the commit stage creates a separate deletion audit record containing the target snapshot, actor, reason, dependencies, and completion status.
 
 ---
 
@@ -286,7 +440,7 @@ Success (`201`):
 
 ### Admin Contact Inbox
 
-These endpoints require a valid admin bearer token.
+These endpoints require a valid `admin` or `super_admin` bearer token.
 
 | Method | Endpoint | Body / Query | Description |
 |---|---|---|---|
@@ -389,6 +543,7 @@ Returned when request body fails validation rules.
 | `401` | Unauthorized — Missing, invalid, or expired token |
 | `403` | Forbidden — Authenticated but insufficient role |
 | `404` | Not Found — Resource doesn't exist |
+| `409` | Conflict — Resource cannot be deleted while related records exist |
 | `422` | Unprocessable Entity — Validation failed (field errors in `errors` object) |
 | `429` | Too Many Requests — Rate limit exceeded |
 | `500` | Internal Server Error |

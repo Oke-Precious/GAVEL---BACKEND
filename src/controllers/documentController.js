@@ -69,7 +69,7 @@ exports.deleteDocument = asyncHandler(async (req, res) => {
   }
 
   // Authorization check (Admin or the uploader)
-  if (req.user.role !== 'admin' && document.uploadedBy._id.toString() !== req.user._id.toString()) {
+  if (!['admin', 'super_admin'].includes(req.user.role) && document.uploadedBy._id.toString() !== req.user._id.toString()) {
     return sendError(res, 403, 'Not authorized to delete this document');
   }
 

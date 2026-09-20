@@ -1,11 +1,56 @@
 const User = require('../models/User');
 const UserAuditLog = require('../models/UserAuditLog');
+const UserDeletionLog = require('../models/UserDeletionLog');
 const Case = require('../models/Case');
+const CaseDocument = require('../models/CaseDocument');
+const StatusHistory = require('../models/StatusHistory');
+const Hearing = require('../models/Hearing');
+const Adjournment = require('../models/Adjournment');
+const ContactMessage = require('../models/ContactMessage');
 const crypto = require('crypto');
 const emailService = require('../services/emailService');
 const asyncHandler = require('../utils/asyncHandler');
 const { sendSuccess, sendError } = require('../utils/apiResponse');
-const bcrypt = require('bcryptjs');
+const { STANDARD_ROLES } = require('../constants/roles');
+const { getManagementDenial, getDeletionConfirmation, isSameUser } = require('../utils/userManagementPolicy');
+
+const getUserDependencies = async userId => {
+  const [
+    assignedCases,
+    uploadedDocuments,
+    statusChanges,
+    hearings,
+    adjournments,
+    resolvedContacts,
+    administrativeActions,
+    managedUsers
+  ] = await Promise.all([
+    Case.countDocuments({ $or: [{ lawyers: userId }, { judge: userId }] }),
+    CaseDocument.countDocuments({ uploadedBy: userId }),
+    StatusHistory.countDocuments({ changedBy: userId }),
+    Hearing.countDocuments({ judge: userId }),
+    Adjournment.countDocuments({ requestedBy: userId }),
+    ContactMessage.countDocuments({ resolvedBy: userId }),
+    UserAuditLog.countDocuments({ performedBy: userId }),
+    User.countDocuments({ $or: [{ suspendedBy: userId }, { reactivatedBy: userId }] })
+  ]);
+
+  const dependencies = {
+    assignedCases,
+    uploadedDocuments,
+    statusChanges,
+    hearings,
+    adjournments,
+    resolvedContacts,
+    administrativeActions,
+    managedUsers
+  };
+
+  return {
+    dependencies,
+    total: Object.values(dependencies).reduce((sum, count) => sum + count, 0)
+  };
+};
 
 /**
  * @desc    Get all users (paginated, filterable)
@@ -14,9 +59,14 @@ const bcrypt = require('bcryptjs');
  */
 exports.getUsers = asyncHandler(async (req, res) => {
   const { role, page = 1, limit = 20 } = req.query;
-  const query = {};
+  const query = req.user.role === 'super_admin' ? {} : { role: { $ne: 'super_admin' } };
 
-  if (role) query.role = role;
+  if (role) {
+    if (role === 'super_admin' && req.user.role !== 'super_admin') {
+      return sendError(res, 403, 'Only a super administrator can view super administrator accounts');
+    }
+    query.role = role;
+  }
 
   const users = await User.find(query)
     .limit(limit * 1)
@@ -40,6 +90,14 @@ exports.getUsers = asyncHandler(async (req, res) => {
  */
 exports.inviteUser = asyncHandler(async (req, res) => {
   const { email, firstName, lastName, role, court } = req.body;
+
+  if (role === 'super_admin') {
+    return sendError(res, 403, 'Super administrator accounts can only be created with the secure bootstrap command');
+  }
+
+  if (role === 'admin' && req.user.role !== 'super_admin') {
+    return sendError(res, 403, 'Only a super administrator can create an administrator account');
+  }
 
   let user = await User.findOne({ email });
   if (user) {
@@ -86,19 +144,52 @@ exports.inviteUser = asyncHandler(async (req, res) => {
  * @access  Private (Admin)
  */
 exports.updateUser = asyncHandler(async (req, res) => {
-  // Prevent password updates through this generic endpoint
-  const updateData = { ...req.body };
-  delete updateData.password;
-  delete updateData.resetPasswordToken;
+  const targetUser = await User.findById(req.params.id);
+
+  if (!targetUser) {
+    return sendError(res, 404, 'User not found');
+  }
+
+  const denial = getManagementDenial(req.user, targetUser, 'update');
+  if (denial) {
+    return sendError(res, 403, denial);
+  }
+
+  const allowedFields = ['firstName', 'lastName', 'phoneNumber', 'barNumber'];
+  const updateData = Object.fromEntries(
+    allowedFields
+      .filter(field => req.body[field] !== undefined)
+      .map(field => [field, req.body[field]])
+  );
+
+  if (req.body.role !== undefined) {
+    if (isSameUser(req.user, targetUser) && req.body.role !== targetUser.role) {
+      return sendError(res, 400, 'You cannot change your own role');
+    }
+
+    if (req.body.role === 'super_admin') {
+      return sendError(res, 403, 'The super administrator role cannot be assigned through the API');
+    }
+
+    if (req.body.role === 'admin' && req.user.role !== 'super_admin') {
+      return sendError(res, 403, 'Only a super administrator can assign the administrator role');
+    }
+
+    if (!STANDARD_ROLES.includes(req.body.role) && req.body.role !== 'admin') {
+      return sendError(res, 400, 'Invalid role specified');
+    }
+
+    updateData.role = req.body.role;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return sendError(res, 400, 'No supported user fields were provided');
+  }
 
   const user = await User.findByIdAndUpdate(req.params.id, updateData, {
     new: true,
     runValidators: true
   });
-
-  if (!user) {
-    return sendError(res, 404, 'User not found');
-  }
 
   sendSuccess(res, 200, 'User updated', { user });
 });
@@ -111,14 +202,18 @@ exports.updateUser = asyncHandler(async (req, res) => {
 exports.suspendUser = asyncHandler(async (req, res) => {
   const targetUserId = req.params.id;
 
-  // Reject if admin tries to suspend themselves
-  if (req.user._id.toString() === targetUserId || req.user.id === targetUserId) {
-    return sendError(res, 400, 'An administrator cannot suspend their own account');
-  }
-
   const user = await User.findById(targetUserId);
   if (!user) {
     return sendError(res, 404, 'User not found');
+  }
+
+  const denial = getManagementDenial(req.user, user, 'suspend');
+  if (denial) {
+    return sendError(res, 403, denial);
+  }
+
+  if (user.role === 'admin' && (!req.body.reason || req.body.reason.trim().length < 10)) {
+    return sendError(res, 400, 'A reason of at least 10 characters is required to suspend an administrator');
   }
 
   // Count active non-compliant/unclosed cases assigned to user
@@ -166,6 +261,11 @@ exports.reactivateUser = asyncHandler(async (req, res) => {
     return sendError(res, 404, 'User not found');
   }
 
+  const denial = getManagementDenial(req.user, user, 'reactivate');
+  if (denial) {
+    return sendError(res, 403, denial);
+  }
+
   user.status = 'active';
   user.reactivatedAt = new Date();
   user.reactivatedBy = req.user._id;
@@ -193,6 +293,11 @@ exports.getUserAuditLog = asyncHandler(async (req, res) => {
     return sendError(res, 404, 'User not found');
   }
 
+  const denial = getManagementDenial(req.user, user, 'manage');
+  if (denial) {
+    return sendError(res, 403, denial);
+  }
+
   const logs = await UserAuditLog.find({ userId: req.params.id })
     .populate('performedBy', 'firstName lastName email')
     .sort({ timestamp: -1 });
@@ -200,3 +305,116 @@ exports.getUserAuditLog = asyncHandler(async (req, res) => {
   sendSuccess(res, 200, 'User audit log retrieved successfully', { logs });
 });
 
+/**
+ * @desc    Check whether a user may be permanently deleted
+ * @route   GET /api/v1/users/:id/deletion-check
+ * @access  Private (Super Admin)
+ */
+exports.getUserDeletionCheck = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'super_admin') {
+    return sendError(res, 403, 'Only a super administrator can delete user accounts');
+  }
+
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return sendError(res, 404, 'User not found');
+  }
+
+  const denial = getManagementDenial(req.user, user, 'delete');
+  if (denial) {
+    return sendError(res, 403, denial);
+  }
+
+  const { dependencies, total } = await getUserDependencies(user._id);
+
+  sendSuccess(res, 200, 'User deletion check completed', {
+    user: {
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role
+    },
+    canDelete: total === 0,
+    requiredConfirmation: getDeletionConfirmation(user.email),
+    dependencies
+  });
+});
+
+/**
+ * @desc    Permanently delete an eligible user
+ * @route   DELETE /api/v1/users/:id
+ * @access  Private (Super Admin)
+ */
+exports.deleteUser = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'super_admin') {
+    return sendError(res, 403, 'Only a super administrator can delete user accounts');
+  }
+
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return sendError(res, 404, 'User not found');
+  }
+
+  const denial = getManagementDenial(req.user, user, 'delete');
+  if (denial) {
+    return sendError(res, 403, denial);
+  }
+
+  const requiredConfirmation = getDeletionConfirmation(user.email);
+  if (req.body.confirmation !== requiredConfirmation) {
+    return sendError(res, 400, `Confirmation must exactly match: ${requiredConfirmation}`);
+  }
+
+  const { dependencies, total } = await getUserDependencies(user._id);
+  if (total > 0) {
+    return sendError(
+      res,
+      409,
+      'User cannot be deleted while related operational records exist. Reassign or remove those records first.',
+      { dependencies }
+    );
+  }
+
+  const deletionLog = await UserDeletionLog.create({
+    targetUserId: user._id,
+    targetEmail: user.email,
+    targetFirstName: user.firstName,
+    targetLastName: user.lastName,
+    targetRole: user.role,
+    deletedBy: req.user._id,
+    deletedByEmail: req.user.email,
+    deletedByRole: req.user.role,
+    reason: req.body.reason,
+    dependencySnapshot: dependencies
+  });
+
+  try {
+    await user.deleteOne();
+  } catch (error) {
+    deletionLog.status = 'failed';
+    deletionLog.failureReason = error.message;
+    await deletionLog.save();
+    throw error;
+  }
+
+  deletionLog.status = 'completed';
+  deletionLog.deletedAt = new Date();
+
+  try {
+    await deletionLog.save();
+  } catch (error) {
+    console.error('User was deleted but deletion audit finalization failed', {
+      deletionLogId: deletionLog._id,
+      targetUserId: user._id,
+      error: error.message
+    });
+  }
+
+  sendSuccess(res, 200, 'User deleted successfully', {
+    deletedUserId: user._id,
+    deletedEmail: user.email
+  });
+});

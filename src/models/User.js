@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const env = require('../config/env');
+const { USER_ROLES } = require('../constants/roles');
 
 const userSchema = new mongoose.Schema({
   firstName: {
@@ -34,7 +35,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'judge', 'lawyer', 'clerk', 'litigant', 'public'],
+    enum: USER_ROLES,
     default: 'public',
   },
   phoneNumber: {

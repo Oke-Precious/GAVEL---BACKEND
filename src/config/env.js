@@ -18,8 +18,15 @@ module.exports = {
   EMAIL_PORT: process.env.EMAIL_PORT,
   EMAIL_USER: process.env.EMAIL_USER,
   EMAIL_PASS: process.env.EMAIL_PASS,
-  EMAIL_FROM: process.env.EMAIL_FROM || '"GAVEL <no-reply@gavel.app>"',
+  EMAIL_FROM: process.env.EMAIL_FROM || (process.env.EMAIL_USER
+    ? `"GAVEL" <${process.env.EMAIL_USER}>`
+    : '"GAVEL" <no-reply@gavel.app>'),
   CONTACT_NOTIFICATION_EMAIL: process.env.CONTACT_NOTIFICATION_EMAIL,
+
+  SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL,
+  SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD,
+  SUPER_ADMIN_FIRST_NAME: process.env.SUPER_ADMIN_FIRST_NAME || 'System',
+  SUPER_ADMIN_LAST_NAME: process.env.SUPER_ADMIN_LAST_NAME || 'Super Admin',
   
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000, // 15 min
   RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX) || 100

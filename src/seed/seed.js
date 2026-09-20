@@ -27,6 +27,16 @@ const seedData = async () => {
     // Demo password for all test accounts
     const defaultPassword = 'Password123!';
 
+    await User.create({
+      firstName: 'System',
+      lastName: 'Super Admin',
+      email: 'superadmin@gavel.app',
+      password: defaultPassword,
+      role: 'super_admin',
+      isEmailVerified: true,
+      phoneNumber: '+2348000000000'
+    });
+
     const admin = await User.create({
       firstName: 'System',
       lastName: 'Admin',
@@ -79,6 +89,7 @@ const seedData = async () => {
     });
 
     console.log('Created Users:');
+    console.log(' - Super Admin: superadmin@gavel.app');
     console.log(' - Admin: admin@gavel.app');
     console.log(' - Judge: judge@gavel.app');
     console.log(' - Lawyer: lawyer@gavel.app');

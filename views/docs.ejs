@@ -659,7 +659,8 @@
         <ul class="toc">
             <li><a href="#overview"><span class="toc-number">00</span>Overview</a></li>
             <li><a href="#quick-start"><span class="toc-number">01</span>Quick start</a></li>
-            <li><a href="#cors"><span class="toc-number">02</span>CORS</a></li>
+            <li><a href="#environment"><span class="toc-number">02</span>Environment</a></li>
+            <li><a href="#cors"><span class="toc-number">03</span>CORS</a></li>
         </ul>
 
         <p class="nav-label">API modules</p>
@@ -693,6 +694,7 @@
         <ul class="toc">
             <li><a href="#overview">Overview</a></li>
             <li><a href="#quick-start">Quick start</a></li>
+            <li><a href="#environment">Environment</a></li>
             <li><a href="#cors">CORS</a></li>
             <li><a href="#auth">1. Authentication</a></li>
             <li><a href="#cases">2. Cases</a></li>
@@ -735,6 +737,7 @@
             </div>
 
             <div class="quick-links" aria-label="Quick links">
+                <a class="quick-link" href="#environment">Environment setup</a>
                 <a class="quick-link" href="#auth">Authentication setup</a>
                 <a class="quick-link" href="#contact">Contact API</a>
                 <a class="quick-link" href="#responses">Response contract</a>
@@ -751,6 +754,9 @@ npm install
 # Seed demo users and sample cases
 npm run seed
 
+# Optional: create the first super administrator from .env
+npm run create-super-admin
+
 # Start with automatic reload
 npm run dev
 
@@ -758,6 +764,7 @@ npm run dev
 npm test</code></pre>
                 <div class="callout">All seeded demo accounts use the password <strong>Password123!</strong>.</div>
                 <div class="demo-grid">
+                    <div class="demo-card"><span>Super Admin</span><code>superadmin@gavel.app</code></div>
                     <div class="demo-card"><span>Admin</span><code>admin@gavel.app</code></div>
                     <div class="demo-card"><span>Judge</span><code>judge@gavel.app</code></div>
                     <div class="demo-card"><span>Lawyer</span><code>lawyer@gavel.app</code></div>
@@ -770,6 +777,7 @@ npm test</code></pre>
                 <h3>Authentication and authorization</h3>
                 <p>Protected routes require <code>Authorization: Bearer &lt;accessToken&gt;</code>. Login also sets an HTTP-only <code>refreshToken</code> cookie, so browser clients should enable credentials. A refresh token may alternatively be sent in the request body.</p>
                 <div class="badge-list" aria-label="Available roles">
+                    <span class="badge">super_admin</span>
                     <span class="badge">admin</span>
                     <span class="badge">judge</span>
                     <span class="badge">lawyer</span>
@@ -777,6 +785,7 @@ npm test</code></pre>
                     <span class="badge">litigant</span>
                     <span class="badge">public</span>
                 </div>
+                <div class="callout"><strong>Super admins</strong> have full role-restricted access. Regular admins can manage ordinary users, but cannot delete accounts, create/promote administrators, or manage super-admin accounts.</div>
                 <pre><code>import axios from 'axios';
 
 const api = axios.create({
@@ -790,6 +799,47 @@ api.interceptors.request.use((config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });</code></pre>
+            </div>
+        </section>
+
+        <section id="environment">
+            <h2>Environment configuration <a class="heading-link" href="#environment" aria-label="Link to Environment configuration">#</a></h2>
+            <p>Copy <code>.env.example</code> to <code>.env</code> and replace every placeholder. Never commit the real <code>.env</code> file or expose database, JWT, or SMTP secrets.</p>
+            <div class="card">
+                <pre><code># Application
+PORT=1940
+NODE_ENV=development
+CLIENT_URL=http://localhost:5173
+BACKEND_URL=http://localhost:1940
+
+# Database
+MONGO_URI=your_mongodb_atlas_connection_string
+
+# Authentication
+JWT_SECRET=replace_with_long_random_string
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_SECRET=replace_with_a_different_long_random_string
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Brevo transactional SMTP
+EMAIL_HOST=smtp-relay.brevo.com
+EMAIL_PORT=587
+EMAIL_USER=your-brevo-smtp-login@smtp-brevo.com
+EMAIL_PASS=your-brevo-smtp-key
+EMAIL_FROM="GAVEL &lt;your-verified-sender@example.com&gt;"
+CONTACT_NOTIFICATION_EMAIL=your-admin-recipient@example.com
+
+# Super-admin bootstrap
+SUPER_ADMIN_EMAIL=superadmin@example.com
+SUPER_ADMIN_PASSWORD=replace_with_at_least_12_characters
+SUPER_ADMIN_FIRST_NAME=System
+SUPER_ADMIN_LAST_NAME=Super Admin
+
+# Global API rate limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=100</code></pre>
+                <div class="callout"><code>CLIENT_URL</code> controls CORS and browser redirects. <code>BACKEND_URL</code> is embedded in verification links, so production must use the public HTTPS backend URL instead of <code>localhost</code>.</div>
+                <div class="callout warning">Local <code>.env</code> changes do not update Render. Configure the same variables in the Render service and restart or redeploy after every hosted environment change.</div>
             </div>
         </section>
 
@@ -812,7 +862,7 @@ api.interceptors.request.use((config) => {
 
         <section id="auth">
             <h2>1. Authentication <a class="heading-link" href="#auth" aria-label="Link to Authentication">#</a></h2>
-            <p>Base path: <code>/auth</code>. Registration, login, verification, password recovery, and token refresh are public. Profile and logout operations require authentication.</p>
+            <p>Base path: <code>/auth</code>. Registration, login, verification, password recovery, and token refresh are public. Profile and logout operations require authentication. Access-token lifetime is configured by <code>JWT_EXPIRES_IN</code> and defaults to <code>15m</code>.</p>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -834,7 +884,7 @@ api.interceptors.request.use((config) => {
 
             <div class="card">
                 <h3>Public signup policy</h3>
-                <p>Public self-signup is available only to volunteer lawyers. If <code>role</code> is omitted, the account is created as <code>lawyer</code>. Legal Aid Officers, Records Officers, administrators, and all other non-lawyer roles must be created by an administrator through <code>POST /users/invite</code>.</p>
+                <p>Public self-signup is available only to volunteer lawyers. If <code>role</code> is omitted, the account is created as <code>lawyer</code>. Other roles use <code>POST /users/invite</code>, but only a super admin may invite an <code>admin</code>. The <code>super_admin</code> role is created only by the secure bootstrap command.</p>
                 <div class="callout warning">Submitting <code>admin</code>, <code>judge</code>, <code>clerk</code>, or any other non-lawyer role returns <code>403</code>.</div>
                 <pre><code>{
   "success": false,
@@ -856,6 +906,20 @@ api.interceptors.request.use((config) => {
     }
   }
 }</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Verification email configuration</h3>
+                <p>Use the exact SMTP Login and a generated SMTP key from Brevo's <strong>Settings &gt; SMTP &amp; API &gt; SMTP</strong> page. Do not use an API key or the Brevo account password.</p>
+                <pre><code>EMAIL_HOST=smtp-relay.brevo.com
+EMAIL_PORT=587
+EMAIL_USER=your-brevo-smtp-login@smtp-brevo.com
+EMAIL_PASS=your-brevo-smtp-key
+EMAIL_FROM="GAVEL &lt;your-verified-sender@example.com&gt;"
+BACKEND_URL=https://your-backend.example.com</code></pre>
+                <p>Do not set <code>EMAIL_SERVICE=brevo</code>. <code>EMAIL_USER</code> is the Brevo SMTP login and can differ from the visible sender. <code>EMAIL_FROM</code> must be verified in Brevo. A verified Gmail sender is acceptable for development; a custom DKIM/DMARC-authenticated domain is recommended in production.</p>
+                <div class="callout warning"><code>525 5.7.1</code> means Brevo SMTP IP blocking rejected the caller; authorize the local and Render outbound addresses or deactivate SMTP IP blocking during development. <code>535</code> means the SMTP login or SMTP key is incorrect.</div>
+                <div class="callout">Check spam/quarantine and backend accepted/rejected logs. Restart locally after changing <code>.env</code>, or restart/redeploy Render after changing hosted variables.</div>
             </div>
 
             <div class="card">
@@ -985,16 +1049,16 @@ FHC/001/2026,"Land Dispute Case","Lagos High Court",Pre-Trial,Active,false</code
 
         <section id="analytics">
             <h2>7. Admin analytics <a class="heading-link" href="#analytics" aria-label="Link to Admin analytics">#</a></h2>
-            <p>Base path: <code>/analytics</code>. All endpoints require the <code>admin</code> role.</p>
+            <p>Base path: <code>/analytics</code>. All endpoints require the <code>admin</code> or <code>super_admin</code> role.</p>
             <div class="table-wrap">
                 <table>
                     <thead>
                         <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Behavior</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td><span class="method get">GET</span></td><td><code>/analytics/overview</code></td><td><span class="access">Admin</span></td><td>Returns total, active, and pro-bono case counts plus user totals and role distribution.</td></tr>
-                        <tr><td><span class="method get">GET</span></td><td><code>/analytics/heatmap</code></td><td><span class="access">Admin</span></td><td>Returns case counts grouped by court and stage, excluding closed cases.</td></tr>
-                        <tr><td><span class="method get">GET</span></td><td><code>/analytics/trends</code></td><td><span class="access">Admin</span></td><td>Returns monthly status-transition counts from <code>StatusHistory</code>.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/analytics/overview</code></td><td><span class="access">Admin / Super Admin</span></td><td>Returns total, active, and pro-bono case counts plus user totals and role distribution.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/analytics/heatmap</code></td><td><span class="access">Admin / Super Admin</span></td><td>Returns case counts grouped by court and stage, excluding closed cases.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/analytics/trends</code></td><td><span class="access">Admin / Super Admin</span></td><td>Returns monthly status-transition counts from <code>StatusHistory</code>.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1002,27 +1066,92 @@ FHC/001/2026,"Land Dispute Case","Lagos High Court",Pre-Trial,Active,false</code
 
         <section id="users">
             <h2>8. User management <a class="heading-link" href="#users" aria-label="Link to User management">#</a></h2>
-            <p>Base path: <code>/users</code>. All endpoints require the <code>admin</code> role.</p>
+            <p>Base path: <code>/users</code>. Admins can manage ordinary users. Super admins have full access, including administrator management and permanent deletion. Regular admins cannot delete accounts, create/promote administrators, or manage super-admin accounts.</p>
             <div class="table-wrap">
                 <table>
                     <thead>
                         <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Body or query</th><th>Behavior</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td><span class="method get">GET</span></td><td><code>/users</code></td><td><span class="access">Admin</span></td><td><code>?role=lawyer&amp;page=1&amp;limit=20</code></td><td>Returns a paginated list of users, optionally filtered by role.</td></tr>
-                        <tr><td><span class="method post">POST</span></td><td><code>/users/invite</code></td><td><span class="access">Admin</span></td><td><code>{ email, firstName, lastName, role, court? }</code></td><td>Creates a pre-verified account with a generated temporary password and attempts to email the invitation.</td></tr>
-                        <tr><td><span class="method patch">PATCH</span></td><td><code>/users/:id</code></td><td><span class="access">Admin</span></td><td><code>{ firstName?, lastName?, role?, phoneNumber?, isActive? }</code></td><td>Updates general user fields. Password changes are blocked on this endpoint.</td></tr>
-                        <tr><td><span class="method patch">PATCH</span></td><td><code>/users/:id/suspend</code></td><td><span class="access">Admin</span></td><td><code>{ reason? }</code></td><td>Suspends the user, invalidates existing access tokens, records the actor/reason, and blocks self-suspension.</td></tr>
-                        <tr><td><span class="method patch">PATCH</span></td><td><code>/users/:id/reactivate</code></td><td><span class="access">Admin</span></td><td>None</td><td>Reactivates a suspended account and records the administrator.</td></tr>
-                        <tr><td><span class="method get">GET</span></td><td><code>/users/:id/audit-log</code></td><td><span class="access">Admin</span></td><td>None</td><td>Returns the user's suspension and reactivation history.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/users</code></td><td><span class="access">Admin / Super Admin</span></td><td><code>?role=lawyer&amp;page=1&amp;limit=20</code></td><td>Returns paginated users. Regular admins cannot list super-admin accounts.</td></tr>
+                        <tr><td><span class="method post">POST</span></td><td><code>/users/invite</code></td><td><span class="access">Admin / Super Admin</span></td><td><code>{ email, firstName, lastName, role, court? }</code></td><td>Creates a pre-verified account with a temporary password. Only super admins may create an admin.</td></tr>
+                        <tr><td><span class="method patch">PATCH</span></td><td><code>/users/:id</code></td><td><span class="access">Admin / Super Admin</span></td><td><code>{ firstName?, lastName?, role?, phoneNumber?, barNumber? }</code></td><td>Updates supported profile fields. Only super admins can edit admins or assign the admin role.</td></tr>
+                        <tr><td><span class="method patch">PATCH</span></td><td><code>/users/:id/suspend</code></td><td><span class="access">Admin / Super Admin</span></td><td><code>{ reason? }</code></td><td>Suspends and invalidates sessions. Admin targets require a super admin and a reason of at least 10 characters.</td></tr>
+                        <tr><td><span class="method patch">PATCH</span></td><td><code>/users/:id/reactivate</code></td><td><span class="access">Admin / Super Admin</span></td><td>None</td><td>Reactivates an account. Only super admins can reactivate administrators.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/users/:id/audit-log</code></td><td><span class="access">Admin / Super Admin</span></td><td>None</td><td>Returns suspension and reactivation history under the same role hierarchy.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/users/:id/deletion-check</code></td><td><span class="access">Super Admin</span></td><td>None</td><td>Returns blockers and the exact confirmation phrase required for permanent deletion.</td></tr>
+                        <tr><td><span class="method delete">DELETE</span></td><td><code>/users/:id</code></td><td><span class="access">Super Admin</span></td><td><code>{ reason, confirmation }</code></td><td>Permanently deletes an eligible non-super-admin account and records a deletion audit.</td></tr>
                     </tbody>
                 </table>
+            </div>
+
+            <div class="card">
+                <h3>Create the first super administrator</h3>
+                <p>The <code>super_admin</code> role cannot be assigned by any HTTP endpoint. Configure the bootstrap identity and run the non-destructive command once:</p>
+                <pre><code>SUPER_ADMIN_EMAIL=superadmin@example.com
+SUPER_ADMIN_PASSWORD=replace_with_at_least_12_characters
+SUPER_ADMIN_FIRST_NAME=System
+SUPER_ADMIN_LAST_NAME=Super Admin</code></pre>
+                <pre><code>npm run create-super-admin</code></pre>
+                <div class="callout">The command refuses to replace an existing non-super-admin account and does not duplicate an existing super admin. The development seed creates <code>superadmin@gavel.app</code> with the shared demo password.</div>
+            </div>
+
+            <div class="card">
+                <h3>Step 1: check deletion eligibility</h3>
+                <p>Only a super admin can perform this check. Self-deletion and deletion of any super-admin account are always blocked.</p>
+                <pre><code>GET /api/v1/users/507f1f77bcf86cd799439011/deletion-check
+Authorization: Bearer &lt;superAdminAccessToken&gt;</code></pre>
+                <pre><code>{
+  "success": true,
+  "message": "User deletion check completed",
+  "data": {
+    "user": {
+      "id": "507f1f77bcf86cd799439011",
+      "email": "test-lawyer@example.com",
+      "role": "lawyer"
+    },
+    "canDelete": true,
+    "requiredConfirmation": "DELETE test-lawyer@example.com",
+    "dependencies": {
+      "assignedCases": 0,
+      "uploadedDocuments": 0,
+      "statusChanges": 0,
+      "hearings": 0,
+      "adjournments": 0,
+      "resolvedContacts": 0,
+      "administrativeActions": 0,
+      "managedUsers": 0
+    }
+  }
+}</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Step 2: confirm permanent deletion</h3>
+                <p>The confirmation must match <code>DELETE &lt;target email&gt;</code> exactly, including capitalization and spacing. A meaningful reason of 10–500 characters is also required.</p>
+                <pre><code>DELETE /api/v1/users/507f1f77bcf86cd799439011
+Authorization: Bearer &lt;superAdminAccessToken&gt;
+Content-Type: application/json
+
+{
+  "reason": "Removing disposable account created during signup testing",
+  "confirmation": "DELETE test-lawyer@example.com"
+}</code></pre>
+                <pre><code>{
+  "success": true,
+  "message": "User deleted successfully",
+  "data": {
+    "deletedUserId": "507f1f77bcf86cd799439011",
+    "deletedEmail": "test-lawyer@example.com"
+  }
+}</code></pre>
+                <div class="callout warning">Deletion returns <code>409</code> while the user has case assignments, uploads, status changes, hearings, adjournments, resolved contacts, administrative actions, or managed-user references. Reassign those records first.</div>
             </div>
         </section>
 
         <section id="contact">
             <h2>9. Contact and issue reporting <a class="heading-link" href="#contact" aria-label="Link to Contact and issue reporting">#</a></h2>
-            <p>Base path: <code>/contact</code>. Anyone can submit a message. Reading or updating the inbox requires an administrator.</p>
+            <p>Base path: <code>/contact</code>. Anyone can submit a message. Reading or updating the inbox requires an administrator or super administrator.</p>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -1030,8 +1159,8 @@ FHC/001/2026,"Land Dispute Case","Lagos High Court",Pre-Trial,Active,false</code
                     </thead>
                     <tbody>
                         <tr><td><span class="method post">POST</span></td><td><code>/contact</code></td><td><span class="access">Public</span></td><td><code>{ name?, email, category, message }</code></td><td>Trims and validates input, saves the message, then attempts to notify the configured administrator.</td></tr>
-                        <tr><td><span class="method get">GET</span></td><td><code>/contact/messages</code></td><td><span class="access">Admin</span></td><td><code>?page=1&amp;limit=20&amp;status=new&amp;category=privacy_concern</code></td><td>Returns messages newest first with optional status/category filters and pagination. Maximum limit is 100.</td></tr>
-                        <tr><td><span class="method patch">PATCH</span></td><td><code>/contact/messages/:id/status</code></td><td><span class="access">Admin</span></td><td><code>{ status, adminNotes? }</code></td><td>Updates inbox status and optional notes. Resolving records the administrator and resolution time.</td></tr>
+                        <tr><td><span class="method get">GET</span></td><td><code>/contact/messages</code></td><td><span class="access">Admin / Super Admin</span></td><td><code>?page=1&amp;limit=20&amp;status=new&amp;category=privacy_concern</code></td><td>Returns messages newest first with optional status/category filters and pagination. Maximum limit is 100.</td></tr>
+                        <tr><td><span class="method patch">PATCH</span></td><td><code>/contact/messages/:id/status</code></td><td><span class="access">Admin / Super Admin</span></td><td><code>{ status, adminNotes? }</code></td><td>Updates inbox status and optional notes. Resolving records the administrator and resolution time.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1178,6 +1307,7 @@ Content-Type: application/json
                         <tr><td><code>401</code></td><td>Unauthorized</td><td>The access token is missing, invalid, expired, or invalidated.</td></tr>
                         <tr><td><code>403</code></td><td>Forbidden</td><td>The authenticated role is not allowed, or a public signup attempted a forbidden role.</td></tr>
                         <tr><td><code>404</code></td><td>Not Found</td><td>The requested route or resource does not exist.</td></tr>
+                        <tr><td><code>409</code></td><td>Conflict</td><td>The user cannot be deleted while related operational records exist.</td></tr>
                         <tr><td><code>422</code></td><td>Unprocessable Entity</td><td>Field validation failed; inspect the response <code>errors</code> object.</td></tr>
                         <tr><td><code>429</code></td><td>Too Many Requests</td><td>The API rate limit was exceeded.</td></tr>
                         <tr><td><code>500</code></td><td>Internal Server Error</td><td>An unexpected server error occurred.</td></tr>

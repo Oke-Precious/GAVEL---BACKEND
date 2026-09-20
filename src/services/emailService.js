@@ -9,21 +9,42 @@ const escapeHtml = (value) => String(value)
   .replaceAll('"', '&quot;')
   .replaceAll("'", '&#039;');
 
+const extractEmailDomain = value => {
+  const match = String(value || '').match(/[A-Z0-9._%+-]+@([A-Z0-9.-]+\.[A-Z]{2,})/i);
+  return match ? match[1].toLowerCase() : null;
+};
+
 class EmailService {
   constructor() {
     this.transporter = null;
     
-    // Initialize standard SMTP transporter if credentials are provided
-    if (env.EMAIL_HOST && env.EMAIL_USER && env.EMAIL_PASS) {
-      this.transporter = nodemailer.createTransport({
-        host: env.EMAIL_HOST,
-        port: env.EMAIL_PORT,
-        secure: env.EMAIL_PORT == 465, // true for 465, false for other ports
+    // Initialize SMTP/service transport when credentials and a provider are present.
+    if ((env.EMAIL_HOST || env.EMAIL_SERVICE) && env.EMAIL_USER && env.EMAIL_PASS) {
+      const transportOptions = {
         auth: {
           user: env.EMAIL_USER,
           pass: env.EMAIL_PASS,
         },
-      });
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 20000
+      };
+
+      if (env.EMAIL_HOST) {
+        transportOptions.host = env.EMAIL_HOST;
+        transportOptions.port = Number(env.EMAIL_PORT) || 587;
+        transportOptions.secure = Number(env.EMAIL_PORT) === 465;
+      } else {
+        transportOptions.service = env.EMAIL_SERVICE;
+      }
+
+      this.transporter = nodemailer.createTransport(transportOptions);
+
+      const authenticatedDomain = extractEmailDomain(env.EMAIL_USER);
+      const senderDomain = extractEmailDomain(env.EMAIL_FROM);
+      if (authenticatedDomain && senderDomain && authenticatedDomain !== senderDomain) {
+        console.warn('EMAIL_FROM does not match the authenticated SMTP domain. Delivery may be rejected or treated as spoofed mail.');
+      }
     }
   }
 
@@ -43,14 +64,35 @@ class EmailService {
     if (this.transporter) {
       try {
         const info = await this.transporter.sendMail(mailOptions);
-        console.log(`Email sent: ${info.messageId}`);
+
+        if (Array.isArray(info.rejected) && info.rejected.length > 0) {
+          console.error('SMTP rejected one or more recipients', {
+            acceptedCount: Array.isArray(info.accepted) ? info.accepted.length : 0,
+            rejectedCount: info.rejected.length,
+            messageId: info.messageId
+          });
+        }
+
+        if (Array.isArray(info.accepted) && info.accepted.length === 0 && Array.isArray(info.rejected) && info.rejected.length > 0) {
+          throw new Error('SMTP rejected all recipients');
+        }
+
+        console.log('Email submitted to SMTP provider', {
+          messageId: info.messageId,
+          acceptedCount: Array.isArray(info.accepted) ? info.accepted.length : undefined,
+          rejectedCount: Array.isArray(info.rejected) ? info.rejected.length : undefined
+        });
         return info;
       } catch (error) {
         console.error(`Error sending email:`, error);
         throw new Error('Email could not be sent');
       }
     } else {
-      // Fallback for development if SMTP is not configured
+      if (env.NODE_ENV === 'production') {
+        throw new Error('Email transport is not configured');
+      }
+
+      // Fallback for local development if SMTP is not configured
       console.log('================ DEVELOPMENT EMAIL FALLBACK ================');
       console.log(`To: ${options.to}`);
       console.log(`Subject: ${options.subject}`);
