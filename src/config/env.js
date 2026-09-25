@@ -18,6 +18,7 @@ module.exports = {
   EMAIL_PORT: process.env.EMAIL_PORT,
   EMAIL_USER: process.env.EMAIL_USER,
   EMAIL_PASS: process.env.EMAIL_PASS,
+  BREVO_API_KEY: process.env.BREVO_API_KEY,
   EMAIL_FROM: process.env.EMAIL_FROM || (process.env.EMAIL_USER
     ? `"GAVEL" <${process.env.EMAIL_USER}>`
     : '"GAVEL" <no-reply@gavel.app>'),

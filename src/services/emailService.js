@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const https = require('https');
 const env = require('../config/env');
 const { CONTACT_CATEGORY_LABELS } = require('../constants/contact');
 
@@ -12,6 +13,21 @@ const escapeHtml = (value) => String(value)
 const extractEmailDomain = value => {
   const match = String(value || '').match(/[A-Z0-9._%+-]+@([A-Z0-9.-]+\.[A-Z]{2,})/i);
   return match ? match[1].toLowerCase() : null;
+};
+
+const parseEmailAddress = value => {
+  const raw = String(value || '').trim();
+  const match = raw.match(/^(?:"?([^"<]*)"?\s*)?<([^<>@\s]+@[^<>@\s]+)>$/);
+
+  if (match) {
+    const name = match[1] ? match[1].trim() : undefined;
+    return {
+      email: match[2].trim(),
+      ...(name ? { name } : {})
+    };
+  }
+
+  return { email: raw.replace(/^"|"$/g, '') };
 };
 
 class EmailService {
@@ -42,10 +58,88 @@ class EmailService {
 
       const authenticatedDomain = extractEmailDomain(env.EMAIL_USER);
       const senderDomain = extractEmailDomain(env.EMAIL_FROM);
-      if (authenticatedDomain && senderDomain && authenticatedDomain !== senderDomain) {
+      const isKnownRelay = String(env.EMAIL_HOST || '').toLowerCase() === 'smtp-relay.brevo.com';
+      if (!isKnownRelay && authenticatedDomain && senderDomain && authenticatedDomain !== senderDomain) {
         console.warn('EMAIL_FROM does not match the authenticated SMTP domain. Delivery may be rejected or treated as spoofed mail.');
       }
     }
+  }
+
+  async postJson(url, body, headers = {}) {
+    return new Promise((resolve, reject) => {
+      const parsedUrl = new URL(url);
+      const payload = JSON.stringify(body);
+      const request = https.request({
+        method: 'POST',
+        hostname: parsedUrl.hostname,
+        path: `${parsedUrl.pathname}${parsedUrl.search}`,
+        port: parsedUrl.port || 443,
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload),
+          ...headers
+        },
+        timeout: 20000
+      }, response => {
+        let responseBody = '';
+
+        response.setEncoding('utf8');
+        response.on('data', chunk => {
+          responseBody += chunk;
+        });
+        response.on('end', () => {
+          let data = responseBody;
+          try {
+            data = responseBody ? JSON.parse(responseBody) : {};
+          } catch (_) {
+            // Keep the raw response text for provider errors that are not JSON.
+          }
+
+          resolve({
+            statusCode: response.statusCode,
+            data
+          });
+        });
+      });
+
+      request.on('timeout', () => {
+        request.destroy(new Error('Brevo API request timed out'));
+      });
+      request.on('error', reject);
+      request.write(payload);
+      request.end();
+    });
+  }
+
+  async sendBrevoApiEmail(options) {
+    const sender = parseEmailAddress(env.EMAIL_FROM);
+    const response = await this.postJson('https://api.brevo.com/v3/smtp/email', {
+      sender,
+      to: [{ email: options.to }],
+      subject: options.subject,
+      textContent: options.text,
+      htmlContent: options.html
+    }, {
+      'api-key': env.BREVO_API_KEY,
+      Accept: 'application/json'
+    });
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      console.error('Brevo API rejected email', {
+        statusCode: response.statusCode,
+        error: response.data && response.data.message
+      });
+      throw new Error('Email could not be sent');
+    }
+
+    console.log('Email submitted to Brevo API', {
+      messageId: response.data && response.data.messageId
+    });
+
+    return {
+      messageId: response.data && response.data.messageId,
+      provider: 'brevo-api'
+    };
   }
 
   /**
@@ -60,6 +154,10 @@ class EmailService {
       text: options.text,
       html: options.html,
     };
+
+    if (env.BREVO_API_KEY) {
+      return this.sendBrevoApiEmail(options);
+    }
 
     if (this.transporter) {
       try {

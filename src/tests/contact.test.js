@@ -126,3 +126,43 @@ test('Contact notification includes required details and escapes HTML', async ()
     emailService.sendEmail = originalSendEmail;
   }
 });
+
+test('Email service can submit through Brevo API without SMTP', async () => {
+  const originalApiKey = env.BREVO_API_KEY;
+  const originalEmailFrom = env.EMAIL_FROM;
+  const originalPostJson = emailService.postJson;
+  let apiRequest;
+
+  try {
+    env.BREVO_API_KEY = 'test-brevo-api-key';
+    env.EMAIL_FROM = 'GAVEL <sender@example.com>';
+    emailService.postJson = async (url, body, headers) => {
+      apiRequest = { url, body, headers };
+      return {
+        statusCode: 201,
+        data: { messageId: 'brevo-message-id' }
+      };
+    };
+
+    const result = await emailService.sendEmail({
+      to: 'recipient@example.com',
+      subject: 'Test email',
+      text: 'Plain text',
+      html: '<p>Plain text</p>'
+    });
+
+    assert.equal(apiRequest.url, 'https://api.brevo.com/v3/smtp/email');
+    assert.equal(apiRequest.headers['api-key'], 'test-brevo-api-key');
+    assert.deepEqual(apiRequest.body.sender, {
+      email: 'sender@example.com',
+      name: 'GAVEL'
+    });
+    assert.deepEqual(apiRequest.body.to, [{ email: 'recipient@example.com' }]);
+    assert.equal(result.provider, 'brevo-api');
+    assert.equal(result.messageId, 'brevo-message-id');
+  } finally {
+    env.BREVO_API_KEY = originalApiKey;
+    env.EMAIL_FROM = originalEmailFrom;
+    emailService.postJson = originalPostJson;
+  }
+});

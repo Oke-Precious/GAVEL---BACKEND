@@ -60,9 +60,10 @@ JWT_EXPIRES_IN=15m
 JWT_REFRESH_SECRET=replace_with_a_different_long_random_string
 JWT_REFRESH_EXPIRES_IN=7d
 
-# Brevo SMTP
+# Brevo transactional email
+BREVO_API_KEY=your-brevo-api-key
 EMAIL_HOST=smtp-relay.brevo.com
-EMAIL_PORT=587
+EMAIL_PORT=2525
 EMAIL_USER=your-brevo-smtp-login@smtp-brevo.com
 EMAIL_PASS=your-brevo-smtp-key
 EMAIL_FROM="GAVEL <your-verified-sender@example.com>"
@@ -173,24 +174,32 @@ The user can then call `POST /auth/resend-verification`. Verification email fail
 
 ### Verification Email Configuration and Troubleshooting
 
-The project is configured for Brevo SMTP. Copy the exact **SMTP Login** from Brevo's **Settings > SMTP & API > SMTP** page and generate an SMTP key. Do not use a Brevo API key or the Brevo account password.
+The project can send through Brevo's Transactional Email API or Brevo SMTP. For Render free web services, prefer the API because Render blocks outbound SMTP traffic on ports `25`, `465`, and `587`. Set `BREVO_API_KEY` to a Brevo API key from **Settings > SMTP & API > API keys**; this sends over HTTPS and does not depend on SMTP ports.
+
+```env
+BREVO_API_KEY=your-brevo-api-key
+EMAIL_FROM="GAVEL <your-verified-sender@example.com>"
+BACKEND_URL=https://your-backend.example.com
+```
+
+SMTP remains available as a fallback. Copy the exact **SMTP Login** from Brevo's **Settings > SMTP & API > SMTP** page and generate an SMTP key. Do not use a Brevo API key or the Brevo account password for `EMAIL_PASS`. If using SMTP from Render free hosting, use Brevo's alternate port `2525` instead of `587`.
 
 ```env
 EMAIL_HOST=smtp-relay.brevo.com
-EMAIL_PORT=587
+EMAIL_PORT=2525
 EMAIL_USER=your-brevo-smtp-login@smtp-brevo.com
 EMAIL_PASS=your-brevo-smtp-key
 EMAIL_FROM="GAVEL <your-verified-sender@example.com>"
 BACKEND_URL=https://your-backend.example.com
 ```
 
-Do not set `EMAIL_SERVICE=brevo`; Brevo is selected with `EMAIL_HOST`. `EMAIL_USER` is the Brevo SMTP login and is normally different from the visible sender. `EMAIL_FROM` must be listed as a verified Brevo sender. A verified Gmail address can be used during development, but Brevo may rewrite it and inbox placement may be reduced; use a custom DKIM/DMARC-authenticated domain in production.
+Do not set `EMAIL_SERVICE=brevo`; Brevo SMTP is selected with `EMAIL_HOST`. If `BREVO_API_KEY` is present, the backend uses the Brevo API first. `EMAIL_USER` is the Brevo SMTP login and is normally different from the visible sender. `EMAIL_FROM` must be listed as a verified Brevo sender. A verified Gmail address can be used during development, but Brevo may rewrite it and inbox placement may be reduced; use a custom DKIM/DMARC-authenticated domain in production.
 
 If Brevo returns `525 5.7.1 Unauthorized IP address`, either deactivate SMTP IP blocking for development or authorize every calling address under **Settings > Security > Authorized IPs**. A deployed Render service uses its own outbound IP ranges, available from the service's **Connect > Outbound** tab; authorizing only the developer computer will not fix production delivery. A `535` response instead indicates an incorrect SMTP login or SMTP key.
 
 In production, missing or rejected transport configuration is treated as a delivery failure and registration returns the degraded-success message shown above. After changing local environment variables, fully restart the backend. After changing Render variables, restart or redeploy the service.
 
-Useful server logs include `Email submitted to SMTP provider`, accepted/rejected recipient counts, and `Registration verification email failed`. An SMTP `250 OK` response means the provider queued the message, but the recipient provider may still place it in spam or quarantine.
+Useful server logs include `Email submitted to Brevo API`, `Email submitted to SMTP provider`, accepted/rejected recipient counts, and `Registration verification email failed`. A provider success response means the provider queued the message, but the recipient provider may still place it in spam or quarantine.
 
 ### Login Response Example
 ```json
@@ -485,7 +494,7 @@ Set the administrator recipient in the backend environment:
 CONTACT_NOTIFICATION_EMAIL=admin@example.com
 ```
 
-The notification subject is `[GAVEL Contact] <Category Label> from <sender email>` and includes the sender name, email, category, message, created time, and message ID. Existing SMTP variables (`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM`) control delivery.
+The notification subject is `[GAVEL Contact] <Category Label> from <sender email>` and includes the sender name, email, category, message, created time, and message ID. Email delivery uses `BREVO_API_KEY` when configured; otherwise it falls back to SMTP with `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM`.
 
 ---
 

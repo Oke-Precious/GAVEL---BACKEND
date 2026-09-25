@@ -821,9 +821,10 @@ JWT_EXPIRES_IN=15m
 JWT_REFRESH_SECRET=replace_with_a_different_long_random_string
 JWT_REFRESH_EXPIRES_IN=7d
 
-# Brevo transactional SMTP
+# Brevo transactional email
+BREVO_API_KEY=your-brevo-api-key
 EMAIL_HOST=smtp-relay.brevo.com
-EMAIL_PORT=587
+EMAIL_PORT=2525
 EMAIL_USER=your-brevo-smtp-login@smtp-brevo.com
 EMAIL_PASS=your-brevo-smtp-key
 EMAIL_FROM="GAVEL &lt;your-verified-sender@example.com&gt;"
@@ -910,16 +911,20 @@ RATE_LIMIT_MAX=100</code></pre>
 
             <div class="card">
                 <h3>Verification email configuration</h3>
-                <p>Use the exact SMTP Login and a generated SMTP key from Brevo's <strong>Settings &gt; SMTP &amp; API &gt; SMTP</strong> page. Do not use an API key or the Brevo account password.</p>
+                <p>For Render free hosting, prefer Brevo's Transactional Email API because Render blocks outbound SMTP traffic on ports <code>25</code>, <code>465</code>, and <code>587</code>. Set <code>BREVO_API_KEY</code> from Brevo's <strong>Settings &gt; SMTP &amp; API &gt; API keys</strong> page; this sends over HTTPS.</p>
+                <pre><code>BREVO_API_KEY=your-brevo-api-key
+EMAIL_FROM="GAVEL &lt;your-verified-sender@example.com&gt;"
+BACKEND_URL=https://your-backend.example.com</code></pre>
+                <p>SMTP remains available as a fallback. Use the exact SMTP Login and a generated SMTP key from Brevo's <strong>Settings &gt; SMTP &amp; API &gt; SMTP</strong> page. If using SMTP from Render free hosting, use Brevo's alternate port <code>2525</code>.</p>
                 <pre><code>EMAIL_HOST=smtp-relay.brevo.com
-EMAIL_PORT=587
+EMAIL_PORT=2525
 EMAIL_USER=your-brevo-smtp-login@smtp-brevo.com
 EMAIL_PASS=your-brevo-smtp-key
 EMAIL_FROM="GAVEL &lt;your-verified-sender@example.com&gt;"
 BACKEND_URL=https://your-backend.example.com</code></pre>
-                <p>Do not set <code>EMAIL_SERVICE=brevo</code>. <code>EMAIL_USER</code> is the Brevo SMTP login and can differ from the visible sender. <code>EMAIL_FROM</code> must be verified in Brevo. A verified Gmail sender is acceptable for development; a custom DKIM/DMARC-authenticated domain is recommended in production.</p>
+                <p>Do not set <code>EMAIL_SERVICE=brevo</code>. When <code>BREVO_API_KEY</code> is present, the backend uses Brevo API first. <code>EMAIL_USER</code> is the Brevo SMTP login and can differ from the visible sender. <code>EMAIL_FROM</code> must be verified in Brevo. A verified Gmail sender is acceptable for development; a custom DKIM/DMARC-authenticated domain is recommended in production.</p>
                 <div class="callout warning"><code>525 5.7.1</code> means Brevo SMTP IP blocking rejected the caller; authorize the local and Render outbound addresses or deactivate SMTP IP blocking during development. <code>535</code> means the SMTP login or SMTP key is incorrect.</div>
-                <div class="callout">Check spam/quarantine and backend accepted/rejected logs. Restart locally after changing <code>.env</code>, or restart/redeploy Render after changing hosted variables.</div>
+                <div class="callout">Check spam/quarantine and backend accepted/rejected logs. Look for <code>Email submitted to Brevo API</code> or <code>Email submitted to SMTP provider</code>. Restart locally after changing <code>.env</code>, or restart/redeploy Render after changing hosted variables.</div>
             </div>
 
             <div class="card">
@@ -1241,7 +1246,7 @@ Content-Type: application/json
                 <h3>Email notification configuration</h3>
                 <pre><code>CONTACT_NOTIFICATION_EMAIL=admin@example.com</code></pre>
                 <p>The subject format is <code>[GAVEL Contact] &lt;Category Label&gt; from &lt;sender email&gt;</code>. The email includes the sender name or “Not provided”, sender email, category label, message, creation date/time, and message ID.</p>
-                <p>SMTP delivery uses <code>EMAIL_HOST</code>, <code>EMAIL_PORT</code>, <code>EMAIL_USER</code>, <code>EMAIL_PASS</code>, and <code>EMAIL_FROM</code>.</p>
+                <p>Email delivery uses <code>BREVO_API_KEY</code> when configured. Otherwise it falls back to SMTP with <code>EMAIL_HOST</code>, <code>EMAIL_PORT</code>, <code>EMAIL_USER</code>, <code>EMAIL_PASS</code>, and <code>EMAIL_FROM</code>.</p>
             </div>
         </section>
 
