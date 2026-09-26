@@ -12,6 +12,7 @@ module.exports = {
   
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
   BACKEND_URL: process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`,
+  EMAIL_VERIFICATION_URL_BASE: process.env.EMAIL_VERIFICATION_URL_BASE,
   
   EMAIL_SERVICE: process.env.EMAIL_SERVICE,
   EMAIL_HOST: process.env.EMAIL_HOST,

@@ -811,6 +811,7 @@ PORT=1940
 NODE_ENV=development
 CLIENT_URL=http://localhost:5173
 BACKEND_URL=http://localhost:1940
+EMAIL_VERIFICATION_URL_BASE=http://localhost:1940/api/v1/auth/verify-email
 
 # Database
 MONGO_URI=your_mongodb_atlas_connection_string
@@ -839,7 +840,7 @@ SUPER_ADMIN_LAST_NAME=Super Admin
 # Global API rate limiting
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX=100</code></pre>
-                <div class="callout"><code>CLIENT_URL</code> controls CORS and browser redirects. <code>BACKEND_URL</code> is embedded in verification links, so production must use the public HTTPS backend URL instead of <code>localhost</code>.</div>
+                <div class="callout"><code>CLIENT_URL</code> controls CORS and browser redirects. <code>BACKEND_URL</code> is embedded in verification links unless <code>EMAIL_VERIFICATION_URL_BASE</code> is set. The token is appended automatically, so use a frontend/custom verification URL only if that route verifies the token or redirects to the backend verification endpoint.</div>
                 <div class="callout warning">Local <code>.env</code> changes do not update Render. Configure the same variables in the Render service and restart or redeploy after every hosted environment change.</div>
             </div>
         </section>
@@ -914,7 +915,8 @@ RATE_LIMIT_MAX=100</code></pre>
                 <p>For Render free hosting, prefer Brevo's Transactional Email API because Render blocks outbound SMTP traffic on ports <code>25</code>, <code>465</code>, and <code>587</code>. Set <code>BREVO_API_KEY</code> from Brevo's <strong>Settings &gt; SMTP &amp; API &gt; API keys</strong> page; this sends over HTTPS.</p>
                 <pre><code>BREVO_API_KEY=your-brevo-api-key
 EMAIL_FROM="GAVEL &lt;your-verified-sender@example.com&gt;"
-BACKEND_URL=https://your-backend.example.com</code></pre>
+BACKEND_URL=https://your-backend.example.com
+EMAIL_VERIFICATION_URL_BASE=https://your-backend.example.com/api/v1/auth/verify-email</code></pre>
                 <p>SMTP remains available as a fallback. Use the exact SMTP Login and a generated SMTP key from Brevo's <strong>Settings &gt; SMTP &amp; API &gt; SMTP</strong> page. If using SMTP from Render free hosting, use Brevo's alternate port <code>2525</code>.</p>
                 <pre><code>EMAIL_HOST=smtp-relay.brevo.com
 EMAIL_PORT=2525

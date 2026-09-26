@@ -166,3 +166,31 @@ test('Email service can submit through Brevo API without SMTP', async () => {
     emailService.postJson = originalPostJson;
   }
 });
+
+test('Verification email uses configurable URL base and hides raw link instructions in HTML', async () => {
+  const originalVerificationUrlBase = env.EMAIL_VERIFICATION_URL_BASE;
+  const originalSendEmail = emailService.sendEmail;
+  let sentOptions;
+
+  try {
+    env.EMAIL_VERIFICATION_URL_BASE = 'https://app.example.com/verify-email';
+    emailService.sendEmail = async (options) => {
+      sentOptions = options;
+      return { messageId: 'verification-message-id' };
+    };
+
+    await emailService.sendVerificationEmail({
+      firstName: 'Ada',
+      email: 'ada@example.com'
+    }, 'raw-token');
+
+    assert.equal(sentOptions.to, 'ada@example.com');
+    assert.match(sentOptions.text, /https:\/\/app\.example\.com\/verify-email\/raw-token/);
+    assert.match(sentOptions.html, /Verify my email/);
+    assert.match(sentOptions.html, /href="https:\/\/app\.example\.com\/verify-email\/raw-token"/);
+    assert.doesNotMatch(sentOptions.html, /paste this link/i);
+  } finally {
+    env.EMAIL_VERIFICATION_URL_BASE = originalVerificationUrlBase;
+    emailService.sendEmail = originalSendEmail;
+  }
+});

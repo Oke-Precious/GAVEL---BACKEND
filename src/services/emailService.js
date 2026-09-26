@@ -30,6 +30,11 @@ const parseEmailAddress = value => {
   return { email: raw.replace(/^"|"$/g, '') };
 };
 
+const appendTokenToUrl = (baseUrl, token) => {
+  const normalizedBase = String(baseUrl || '').replace(/\/+$/, '');
+  return `${normalizedBase}/${token}`;
+};
+
 class EmailService {
   constructor() {
     this.transporter = null;
@@ -206,19 +211,44 @@ class EmailService {
    * @param {string} token - Raw unhashed verification token
    */
   async sendVerificationEmail(user, token) {
-    const verificationUrl = `${env.BACKEND_URL}/api/v1/auth/verify-email/${token}`;
+    const verificationUrlBase = env.EMAIL_VERIFICATION_URL_BASE
+      || `${env.BACKEND_URL}/api/v1/auth/verify-email`;
+    const verificationUrl = appendTokenToUrl(verificationUrlBase, token);
+    const firstName = escapeHtml(user.firstName || 'there');
+    const safeVerificationUrl = escapeHtml(verificationUrl);
     
     const subject = 'GAVEL - Verify Your Email Address';
-    const text = `Hello ${user.firstName},\n\nPlease verify your email address by clicking on the following link or pasting it into your browser:\n\n${verificationUrl}\n\nIf you did not request this, please ignore this email.`;
+    const text = `Hello ${user.firstName || 'there'},\n\nWelcome to GAVEL. Please verify your email address using this link:\n${verificationUrl}\n\nThis link expires soon. If you did not create a GAVEL account, please ignore this email.`;
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2>Welcome to GAVEL</h2>
-        <p>Hello ${user.firstName},</p>
-        <p>Thank you for registering. Please verify your email address by clicking the button below:</p>
-        <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; margin: 20px 0; background-color: #0056b3; color: #ffffff; text-decoration: none; border-radius: 5px;">Verify Email</a>
-        <p>Or paste this link into your browser:</p>
-        <p><a href="${verificationUrl}">${verificationUrl}</a></p>
-        <p>If you did not create an account, please ignore this email.</p>
+      <div style="margin:0; padding:0; background:#f3f6fb; font-family:Arial, Helvetica, sans-serif; color:#182033;">
+        <div style="max-width:640px; margin:0 auto; padding:32px 16px;">
+          <div style="background:#ffffff; border:1px solid #e4e9f2; border-radius:16px; overflow:hidden; box-shadow:0 18px 45px rgba(15, 23, 42, 0.08);">
+            <div style="background:#0f3b66; padding:28px 32px; text-align:left;">
+              <div style="font-size:26px; line-height:1; font-weight:800; letter-spacing:0.08em; color:#ffffff;">GAVEL</div>
+              <div style="margin-top:10px; color:#d8e8f7; font-size:14px;">Secure access to justice services</div>
+            </div>
+
+            <div style="padding:34px 32px 28px;">
+              <div style="display:inline-block; padding:7px 12px; border-radius:999px; background:#eaf4ff; color:#0f5c9d; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">Email verification</div>
+              <h1 style="margin:22px 0 10px; font-size:26px; line-height:1.25; color:#101828;">Welcome to GAVEL, ${firstName}</h1>
+              <p style="margin:0; font-size:16px; line-height:1.7; color:#4b5565;">Your volunteer lawyer account has been created. Please confirm this email address so we can keep your account secure and complete your signup.</p>
+
+              <div style="text-align:center; margin:32px 0;">
+                <a href="${safeVerificationUrl}" style="display:inline-block; background:#0f5c9d; color:#ffffff; text-decoration:none; padding:15px 28px; border-radius:10px; font-weight:700; font-size:16px;">Verify my email</a>
+              </div>
+
+              <div style="background:#f8fafc; border:1px solid #e4e9f2; border-radius:12px; padding:16px 18px; color:#596579; font-size:14px; line-height:1.6;">
+                This verification link is unique to your account. If the button does not open, request a new verification email from the login page.
+              </div>
+
+              <p style="margin:24px 0 0; font-size:14px; line-height:1.6; color:#667085;">If you did not create a GAVEL account, you can safely ignore this email.</p>
+            </div>
+
+            <div style="border-top:1px solid #e4e9f2; padding:18px 32px; background:#fbfcfe; color:#8a95a8; font-size:12px; line-height:1.5;">
+              This message was sent by GAVEL. Please do not reply directly to this automated email.
+            </div>
+          </div>
+        </div>
       </div>
     `;
 

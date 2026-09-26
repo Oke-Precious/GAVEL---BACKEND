@@ -50,6 +50,7 @@ PORT=1940
 NODE_ENV=development
 CLIENT_URL=http://localhost:5173
 BACKEND_URL=http://localhost:1940
+EMAIL_VERIFICATION_URL_BASE=http://localhost:1940/api/v1/auth/verify-email
 
 # Database
 MONGO_URI=your_mongodb_atlas_connection_string
@@ -80,7 +81,7 @@ RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX=100
 ```
 
-`CLIENT_URL` controls browser redirects and CORS. `BACKEND_URL` is embedded in verification-email links, so production must use the public HTTPS backend URL rather than `localhost`. Render environment variables must be configured separately from the local `.env` file, followed by a restart or redeploy.
+`CLIENT_URL` controls browser redirects and CORS. `BACKEND_URL` is embedded in verification-email links unless `EMAIL_VERIFICATION_URL_BASE` is set. The verification token is appended automatically. Use a frontend/custom verification URL only if that route can verify the token or redirect to the backend verification endpoint. Render environment variables must be configured separately from the local `.env` file, followed by a restart or redeploy.
 
 ---
 
@@ -180,6 +181,7 @@ The project can send through Brevo's Transactional Email API or Brevo SMTP. For 
 BREVO_API_KEY=your-brevo-api-key
 EMAIL_FROM="GAVEL <your-verified-sender@example.com>"
 BACKEND_URL=https://your-backend.example.com
+EMAIL_VERIFICATION_URL_BASE=https://your-backend.example.com/api/v1/auth/verify-email
 ```
 
 SMTP remains available as a fallback. Copy the exact **SMTP Login** from Brevo's **Settings > SMTP & API > SMTP** page and generate an SMTP key. Do not use a Brevo API key or the Brevo account password for `EMAIL_PASS`. If using SMTP from Render free hosting, use Brevo's alternate port `2525` instead of `587`.
