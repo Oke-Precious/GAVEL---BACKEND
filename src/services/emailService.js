@@ -216,36 +216,53 @@ class EmailService {
     const verificationUrl = appendTokenToUrl(verificationUrlBase, token);
     const firstName = escapeHtml(user.firstName || 'there');
     const safeVerificationUrl = escapeHtml(verificationUrl);
+    const safeLogoUrl = env.GAVEL_LOGO_URL ? escapeHtml(env.GAVEL_LOGO_URL) : null;
+    const logoMarkup = safeLogoUrl
+      ? `<img src="${safeLogoUrl}" width="190" alt="GAVEL - Legal Case Tracking and Oversight" style="display:block; width:190px; max-width:78%; height:auto; border:0; outline:none; text-decoration:none;">`
+      : `<div style="font-size:30px; line-height:1; font-weight:900; letter-spacing:0.1em; color:#ffffff;">GAVEL</div>`;
     
     const subject = 'GAVEL - Verify Your Email Address';
     const text = `Hello ${user.firstName || 'there'},\n\nWelcome to GAVEL. Please verify your email address using this link:\n${verificationUrl}\n\nThis link expires soon. If you did not create a GAVEL account, please ignore this email.`;
     const html = `
-      <div style="margin:0; padding:0; background:#f3f6fb; font-family:Arial, Helvetica, sans-serif; color:#182033;">
-        <div style="max-width:640px; margin:0 auto; padding:32px 16px;">
-          <div style="background:#ffffff; border:1px solid #e4e9f2; border-radius:16px; overflow:hidden; box-shadow:0 18px 45px rgba(15, 23, 42, 0.08);">
-            <div style="background:#0f3b66; padding:28px 32px; text-align:left;">
-              <div style="font-size:26px; line-height:1; font-weight:800; letter-spacing:0.08em; color:#ffffff;">GAVEL</div>
-              <div style="margin-top:10px; color:#d8e8f7; font-size:14px;">Secure access to justice services</div>
+      <div style="margin:0; padding:0; background:#edf3f8; font-family:Arial, Helvetica, sans-serif; color:#162033;">
+        <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">Verify your GAVEL account to complete signup.</div>
+        <div style="max-width:680px; margin:0 auto; padding:34px 14px;">
+          <div style="border-radius:22px; overflow:hidden; background:#ffffff; border:1px solid #dbe5ee; box-shadow:0 24px 60px rgba(3, 20, 46, 0.14);">
+            <div style="background:#001b4d; background-image:linear-gradient(135deg, #00133a 0%, #002b66 58%, #00d8b5 145%); padding:34px 36px 30px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                <tr>
+                  <td align="left" style="vertical-align:middle;">
+                    ${logoMarkup}
+                    <div style="margin-top:14px; font-size:13px; line-height:1.5; color:#bfeee6; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">Legal case tracking & oversight</div>
+                  </td>
+                </tr>
+              </table>
             </div>
 
-            <div style="padding:34px 32px 28px;">
-              <div style="display:inline-block; padding:7px 12px; border-radius:999px; background:#eaf4ff; color:#0f5c9d; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">Email verification</div>
-              <h1 style="margin:22px 0 10px; font-size:26px; line-height:1.25; color:#101828;">Welcome to GAVEL, ${firstName}</h1>
-              <p style="margin:0; font-size:16px; line-height:1.7; color:#4b5565;">Your volunteer lawyer account has been created. Please confirm this email address so we can keep your account secure and complete your signup.</p>
+            <div style="padding:40px 38px 34px;">
+              <div style="display:inline-block; padding:8px 14px; border-radius:999px; background:#e8fbf7; color:#007a68; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.08em;">Account verification</div>
+              <h1 style="margin:22px 0 12px; font-size:30px; line-height:1.2; color:#071833; font-weight:900;">Confirm your email, ${firstName}</h1>
+              <p style="margin:0; font-size:16px; line-height:1.75; color:#4b5b70;">Your GAVEL volunteer lawyer account is ready. Verify this email address to protect your account and complete your signup.</p>
 
               <div style="text-align:center; margin:32px 0;">
-                <a href="${safeVerificationUrl}" style="display:inline-block; background:#0f5c9d; color:#ffffff; text-decoration:none; padding:15px 28px; border-radius:10px; font-weight:700; font-size:16px;">Verify my email</a>
+                <a href="${safeVerificationUrl}" style="display:inline-block; background:#00cfae; color:#001b4d; text-decoration:none; padding:16px 34px; border-radius:999px; font-weight:900; font-size:16px; box-shadow:0 12px 24px rgba(0, 207, 174, 0.28);">Verify my email</a>
               </div>
 
-              <div style="background:#f8fafc; border:1px solid #e4e9f2; border-radius:12px; padding:16px 18px; color:#596579; font-size:14px; line-height:1.6;">
-                This verification link is unique to your account. If the button does not open, request a new verification email from the login page.
-              </div>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 0 26px;">
+                <tr>
+                  <td style="background:#f7fafc; border:1px solid #dfe8f2; border-radius:16px; padding:18px 20px;">
+                    <div style="font-size:14px; line-height:1.7; color:#526173;">
+                      <strong style="color:#071833;">Security note:</strong> this verification button is unique to your account. If it expires, request a new verification email from the login page.
+                    </div>
+                  </td>
+                </tr>
+              </table>
 
-              <p style="margin:24px 0 0; font-size:14px; line-height:1.6; color:#667085;">If you did not create a GAVEL account, you can safely ignore this email.</p>
+              <p style="margin:0; font-size:14px; line-height:1.7; color:#69778a;">If you did not create a GAVEL account, no action is required. You can safely ignore this email.</p>
             </div>
 
-            <div style="border-top:1px solid #e4e9f2; padding:18px 32px; background:#fbfcfe; color:#8a95a8; font-size:12px; line-height:1.5;">
-              This message was sent by GAVEL. Please do not reply directly to this automated email.
+            <div style="border-top:1px solid #dfe8f2; padding:22px 38px; background:#f8fbfd;">
+              <div style="font-size:12px; line-height:1.7; color:#7d8a9c;">GAVEL - Legal Case Tracking & Oversight. This automated email was sent to help secure your account. Please do not reply directly to this message.</div>
             </div>
           </div>
         </div>
