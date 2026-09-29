@@ -273,6 +273,66 @@ class EmailService {
   }
 
   /**
+   * Send email verification code
+   * @param {Object} user - User object
+   * @param {string} code - Plain 6-digit verification code
+   */
+  async sendVerificationCodeEmail(user, code) {
+    const firstName = escapeHtml(user.firstName || 'there');
+    const safeCode = escapeHtml(code);
+    const safeLogoUrl = env.GAVEL_LOGO_URL ? escapeHtml(env.GAVEL_LOGO_URL) : null;
+    const logoMarkup = safeLogoUrl
+      ? `<img src="${safeLogoUrl}" width="190" alt="GAVEL - Legal Case Tracking and Oversight" style="display:block; width:190px; max-width:78%; height:auto; border:0; outline:none; text-decoration:none;">`
+      : `<div style="font-size:30px; line-height:1; font-weight:900; letter-spacing:0.1em; color:#ffffff;">GAVEL</div>`;
+
+    const subject = 'GAVEL - Your Verification Code';
+    const text = `Hello ${user.firstName || 'there'},\n\nYour GAVEL verification code is: ${code}\n\nThis code expires in 10 minutes. If you did not create a GAVEL account, please ignore this email.`;
+    const html = `
+      <div style="margin:0; padding:0; background:#edf3f8; font-family:Arial, Helvetica, sans-serif; color:#162033;">
+        <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">Your GAVEL verification code is ${safeCode}.</div>
+        <div style="max-width:680px; margin:0 auto; padding:34px 14px;">
+          <div style="border-radius:22px; overflow:hidden; background:#ffffff; border:1px solid #dbe5ee; box-shadow:0 24px 60px rgba(3, 20, 46, 0.14);">
+            <div style="background:#001b4d; background-image:linear-gradient(135deg, #00133a 0%, #002b66 58%, #00d8b5 145%); padding:34px 36px 30px;">
+              ${logoMarkup}
+              <div style="margin-top:14px; font-size:13px; line-height:1.5; color:#bfeee6; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">Legal case tracking & oversight</div>
+            </div>
+
+            <div style="padding:40px 38px 34px;">
+              <div style="display:inline-block; padding:8px 14px; border-radius:999px; background:#e8fbf7; color:#007a68; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.08em;">Email verification</div>
+              <h1 style="margin:22px 0 12px; font-size:30px; line-height:1.2; color:#071833; font-weight:900;">Your verification code</h1>
+              <p style="margin:0; font-size:16px; line-height:1.75; color:#4b5b70;">Hello ${firstName}, enter this code in GAVEL to confirm your email address and complete your signup.</p>
+
+              <div style="margin:30px 0; text-align:center;">
+                <div style="display:inline-block; padding:18px 28px; border-radius:18px; background:#f7fafc; border:1px solid #dce8f2; box-shadow:inset 0 1px 0 #ffffff;">
+                  <div style="font-size:38px; line-height:1; letter-spacing:0.22em; color:#001b4d; font-weight:900; font-family:Arial, Helvetica, sans-serif;">${safeCode}</div>
+                </div>
+              </div>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:0 0 26px;">
+                <tr>
+                  <td style="background:#f7fafc; border:1px solid #dfe8f2; border-radius:16px; padding:18px 20px;">
+                    <div style="font-size:14px; line-height:1.7; color:#526173;">
+                      <strong style="color:#071833;">Security note:</strong> this code expires in 10 minutes. Never share it with anyone. If it expires, request a new verification code from the login page.
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0; font-size:14px; line-height:1.7; color:#69778a;">If you did not create a GAVEL account, no action is required. You can safely ignore this email.</p>
+            </div>
+
+            <div style="border-top:1px solid #dfe8f2; padding:22px 38px; background:#f8fbfd;">
+              <div style="font-size:12px; line-height:1.7; color:#7d8a9c;">GAVEL - Legal Case Tracking & Oversight. This automated email was sent to help secure your account. Please do not reply directly to this message.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    return this.sendEmail({ to: user.email, subject, text, html });
+  }
+
+  /**
    * Send password reset link
    * @param {Object} user - User object
    * @param {string} token - Raw unhashed reset token

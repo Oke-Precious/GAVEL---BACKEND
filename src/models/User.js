@@ -59,6 +59,23 @@ const userSchema = new mongoose.Schema({
     type: Date,
     select: false,
   },
+  emailVerificationCode: {
+    type: String,
+    select: false,
+  },
+  emailVerificationCodeExpires: {
+    type: Date,
+    select: false,
+  },
+  emailVerificationAttempts: {
+    type: Number,
+    default: 0,
+    select: false,
+  },
+  emailVerificationLastSentAt: {
+    type: Date,
+    select: false,
+  },
   resetPasswordToken: {
     type: String,
     select: false,
@@ -174,6 +191,22 @@ userSchema.methods.createEmailVerificationToken = function() {
   this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
   
   return verificationToken;
+};
+
+// Generate and hash a short email verification code
+userSchema.methods.createEmailVerificationCode = function() {
+  const verificationCode = crypto.randomInt(100000, 1000000).toString();
+
+  this.emailVerificationCode = crypto
+    .createHash('sha256')
+    .update(verificationCode)
+    .digest('hex');
+
+  this.emailVerificationCodeExpires = Date.now() + 10 * 60 * 1000;
+  this.emailVerificationAttempts = 0;
+  this.emailVerificationLastSentAt = Date.now();
+
+  return verificationCode;
 };
 
 module.exports = mongoose.model('User', userSchema);

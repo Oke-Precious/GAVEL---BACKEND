@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const User = require('../models/User');
 const emailService = require('../services/emailService');
-const { register } = require('../controllers/authController');
+const { register, verifyEmailCode } = require('../controllers/authController');
 
 const invokeHandler = (handler, req) => new Promise((resolve, reject) => {
   const res = {
@@ -42,6 +42,7 @@ test('Registration remains successful when verification email delivery fails', a
   const originalFindOne = User.findOne;
   const originalCreate = User.create;
   const originalSendVerificationEmail = emailService.sendVerificationEmail;
+  const originalSendVerificationCodeEmail = emailService.sendVerificationCodeEmail;
   const originalConsoleError = console.error;
   let createdUserData;
 
@@ -53,6 +54,7 @@ test('Registration remains successful when verification email delivery fails', a
     password: 'hashed-password',
     role: 'lawyer',
     createEmailVerificationToken: () => 'raw-token',
+    createEmailVerificationCode: () => '123456',
     save: async () => user,
     toObject: () => ({ ...user })
   };
@@ -63,7 +65,7 @@ test('Registration remains successful when verification email delivery fails', a
       createdUserData = data;
       return user;
     };
-    emailService.sendVerificationEmail = async () => {
+    emailService.sendVerificationCodeEmail = async () => {
       throw new Error('SMTP unavailable');
     };
     console.error = () => {};
@@ -89,6 +91,49 @@ test('Registration remains successful when verification email delivery fails', a
     User.findOne = originalFindOne;
     User.create = originalCreate;
     emailService.sendVerificationEmail = originalSendVerificationEmail;
+    emailService.sendVerificationCodeEmail = originalSendVerificationCodeEmail;
     console.error = originalConsoleError;
+  }
+});
+
+test('Email verification code verifies an unverified user', async () => {
+  const originalFindOne = User.findOne;
+  let saved = false;
+
+  const hashedCode = require('crypto')
+    .createHash('sha256')
+    .update('123456')
+    .digest('hex');
+
+  const user = {
+    isEmailVerified: false,
+    emailVerificationCode: hashedCode,
+    emailVerificationCodeExpires: new Date(Date.now() + 10 * 60 * 1000),
+    emailVerificationAttempts: 0,
+    save: async () => {
+      saved = true;
+      return user;
+    }
+  };
+
+  try {
+    User.findOne = () => ({
+      select: async () => user
+    });
+
+    const response = await invokeHandler(verifyEmailCode, {
+      body: {
+        email: 'ada@example.com',
+        code: '123456'
+      }
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.body.success, true);
+    assert.equal(user.isEmailVerified, true);
+    assert.equal(user.emailVerificationCode, undefined);
+    assert.equal(saved, true);
+  } finally {
+    User.findOne = originalFindOne;
   }
 });

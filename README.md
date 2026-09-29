@@ -129,6 +129,7 @@ NODE_ENV=development
 CLIENT_URL=http://localhost:5173
 BACKEND_URL=http://localhost:1940
 EMAIL_VERIFICATION_URL_BASE=http://localhost:1940/api/v1/auth/verify-email
+GAVEL_LOGO_URL=https://your-public-logo-url.example.com/gavel-logo.png
 
 MONGO_URI=your_mongodb_atlas_connection_string
 
@@ -170,7 +171,7 @@ EMAIL_FROM="GAVEL <your-verified-sender@example.com>"
 
 `EMAIL_FROM` must be a verified Brevo sender.
 
-The verification email button uses `EMAIL_VERIFICATION_URL_BASE`. The backend appends the token automatically. Keep it pointed at the backend endpoint unless the frontend has a route that can verify the token or redirect to the backend verification endpoint.
+Signup sends a 6-digit verification code by email. The legacy verification link still uses `EMAIL_VERIFICATION_URL_BASE`; the backend appends the token automatically. Keep it pointed at the backend endpoint unless the frontend has a route that can verify the token or redirect to the backend verification endpoint. `GAVEL_LOGO_URL` must be a public HTTPS image URL if you want the logo to render in emails.
 
 ## Authentication and Roles
 
@@ -230,6 +231,20 @@ Health check:
 
 ```http
 GET /api/v1/health
+```
+
+Verify signup code:
+
+```http
+POST /api/v1/auth/verify-email-code
+Content-Type: application/json
+```
+
+```json
+{
+  "email": "testlawyer@example.com",
+  "code": "123456"
+}
 ```
 
 ## Deployment Checklist

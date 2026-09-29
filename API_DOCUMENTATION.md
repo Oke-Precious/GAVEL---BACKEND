@@ -51,6 +51,7 @@ NODE_ENV=development
 CLIENT_URL=http://localhost:5173
 BACKEND_URL=http://localhost:1940
 EMAIL_VERIFICATION_URL_BASE=http://localhost:1940/api/v1/auth/verify-email
+GAVEL_LOGO_URL=https://your-public-logo-url.example.com/gavel-logo.png
 
 # Database
 MONGO_URI=your_mongodb_atlas_connection_string
@@ -81,7 +82,7 @@ RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX=100
 ```
 
-`CLIENT_URL` controls browser redirects and CORS. `BACKEND_URL` is embedded in verification-email links unless `EMAIL_VERIFICATION_URL_BASE` is set. The verification token is appended automatically. Use a frontend/custom verification URL only if that route can verify the token or redirect to the backend verification endpoint. Render environment variables must be configured separately from the local `.env` file, followed by a restart or redeploy.
+`CLIENT_URL` controls browser redirects and CORS. `BACKEND_URL` is embedded in verification-email links unless `EMAIL_VERIFICATION_URL_BASE` is set. The verification token is appended automatically. Use a frontend/custom verification URL only if that route can verify the token or redirect to the backend verification endpoint. `GAVEL_LOGO_URL` must be a public HTTPS image URL if you want the logo to render inside emails. Render environment variables must be configured separately from the local `.env` file, followed by a restart or redeploy.
 
 ---
 
@@ -144,7 +145,8 @@ The following frontend origins are allowed without any extra configuration:
 | `POST` | `/auth/forgot-password` | No | `{ email }` | Sends a password reset link to the email. Always returns success to prevent enumeration. |
 | `POST` | `/auth/reset-password/:token` | No | `{ password }` | Resets the user's password. Token is valid for **10 minutes**. |
 | `GET` | `/auth/verify-email/:token` | No | — | Verifies email address. **Browser requests redirect to `CLIENT_URL/login?verified=true`**. API calls (non-HTML `Accept` headers) get JSON. |
-| `POST` | `/auth/resend-verification` | No | `{ email }` | Resends verification email. |
+| `POST` | `/auth/verify-email-code` | No | `{ email, code }` | Verifies email address with the 6-digit code sent by email. |
+| `POST` | `/auth/resend-verification` | No | `{ email }` | Resends a fresh 6-digit verification code. Rate-limited to one request per minute per user. |
 
 ### Public Registration Policy
 
@@ -171,7 +173,32 @@ Registration commits the user account before attempting verification email deliv
 }
 ```
 
-The user can then call `POST /auth/resend-verification`. Verification email failures are logged internally and never change a successfully created registration into an error response.
+The signup email now sends a 6-digit verification code. The user can verify with `POST /auth/verify-email-code`, or request a fresh code with `POST /auth/resend-verification`. Verification email failures are logged internally and never change a successfully created registration into an error response.
+
+### Verify Email Code
+
+```http
+POST /api/v1/auth/verify-email-code
+Content-Type: application/json
+```
+
+```json
+{
+  "email": "lawyer@example.com",
+  "code": "123456"
+}
+```
+
+Success:
+
+```json
+{
+  "success": true,
+  "message": "Email verified successfully. You can now login."
+}
+```
+
+Verification codes are 6 digits, expire after 10 minutes, and allow up to 5 invalid attempts before the user must request a new code.
 
 ### Verification Email Configuration and Troubleshooting
 
@@ -182,6 +209,7 @@ BREVO_API_KEY=your-brevo-api-key
 EMAIL_FROM="GAVEL <your-verified-sender@example.com>"
 BACKEND_URL=https://your-backend.example.com
 EMAIL_VERIFICATION_URL_BASE=https://your-backend.example.com/api/v1/auth/verify-email
+GAVEL_LOGO_URL=https://your-public-logo-url.example.com/gavel-logo.png
 ```
 
 SMTP remains available as a fallback. Copy the exact **SMTP Login** from Brevo's **Settings > SMTP & API > SMTP** page and generate an SMTP key. Do not use a Brevo API key or the Brevo account password for `EMAIL_PASS`. If using SMTP from Render free hosting, use Brevo's alternate port `2525` instead of `587`.

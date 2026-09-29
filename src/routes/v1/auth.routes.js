@@ -8,6 +8,7 @@ const {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  verifyEmailCode,
   resendVerificationEmail,
   refreshToken
 } = require('../../controllers/authController');
@@ -57,6 +58,14 @@ const resetPasswordValidation = [
     .withMessage('Password must be at least 8 characters long'),
 ];
 
+const verifyEmailCodeValidation = [
+  body('email').isEmail().withMessage('Please provide a valid email address').normalizeEmail(),
+  body('code')
+    .trim()
+    .matches(/^\d{6}$/)
+    .withMessage('Verification code must be 6 digits'),
+];
+
 // Routes
 router.post('/register', enforcePublicSignupRole, registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
@@ -66,6 +75,7 @@ router.get('/me', protect, getMe);
 router.post('/forgot-password', forgotPasswordValidation, validate, forgotPassword);
 router.post('/reset-password/:token', resetPasswordValidation, validate, resetPassword);
 router.get('/verify-email/:token', verifyEmail);
+router.post('/verify-email-code', verifyEmailCodeValidation, validate, verifyEmailCode);
 router.post('/resend-verification', forgotPasswordValidation, validate, resendVerificationEmail);
 
 module.exports = router;

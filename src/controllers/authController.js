@@ -55,8 +55,9 @@ exports.register = asyncHandler(async (req, res) => {
   // into a failed API response.
   try {
     const verificationToken = user.createEmailVerificationToken();
+    const verificationCode = user.createEmailVerificationCode();
     await user.save({ validateBeforeSave: false });
-    await emailService.sendVerificationEmail(user, verificationToken);
+    await emailService.sendVerificationCodeEmail(user, verificationCode);
     verificationEmailSent = true;
   } catch (error) {
     console.error('Registration verification email failed', {
@@ -72,6 +73,10 @@ exports.register = asyncHandler(async (req, res) => {
   delete userData.password;
   delete userData.emailVerificationToken;
   delete userData.emailVerificationExpires;
+  delete userData.emailVerificationCode;
+  delete userData.emailVerificationCodeExpires;
+  delete userData.emailVerificationAttempts;
+  delete userData.emailVerificationLastSentAt;
   delete userData.resetPasswordToken;
   delete userData.resetPasswordExpires;
   delete userData.refreshToken;
@@ -320,6 +325,61 @@ exports.verifyEmail = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Verify email using 6-digit code
+ * @route   POST /api/v1/auth/verify-email-code
+ * @access  Public
+ */
+exports.verifyEmailCode = asyncHandler(async (req, res) => {
+  const { email, code } = req.body;
+  const normalizedCode = String(code || '').trim();
+
+  const user = await User.findOne({ email })
+    .select('+emailVerificationToken +emailVerificationExpires +emailVerificationCode +emailVerificationCodeExpires +emailVerificationAttempts');
+
+  if (!user) {
+    return sendError(res, 400, 'Invalid or expired verification code');
+  }
+
+  if (user.isEmailVerified) {
+    return sendError(res, 400, 'This email address is already verified');
+  }
+
+  if (
+    !user.emailVerificationCode
+    || !user.emailVerificationCodeExpires
+    || user.emailVerificationCodeExpires < Date.now()
+  ) {
+    return sendError(res, 400, 'Invalid or expired verification code');
+  }
+
+  if ((user.emailVerificationAttempts || 0) >= 5) {
+    return sendError(res, 429, 'Too many invalid verification attempts. Please request a new verification code.');
+  }
+
+  const hashedCode = crypto
+    .createHash('sha256')
+    .update(normalizedCode)
+    .digest('hex');
+
+  if (hashedCode !== user.emailVerificationCode) {
+    user.emailVerificationAttempts = (user.emailVerificationAttempts || 0) + 1;
+    await user.save({ validateBeforeSave: false });
+    return sendError(res, 400, 'Invalid or expired verification code');
+  }
+
+  user.isEmailVerified = true;
+  user.emailVerificationToken = undefined;
+  user.emailVerificationExpires = undefined;
+  user.emailVerificationCode = undefined;
+  user.emailVerificationCodeExpires = undefined;
+  user.emailVerificationAttempts = 0;
+  user.emailVerificationLastSentAt = undefined;
+  await user.save({ validateBeforeSave: false });
+
+  sendSuccess(res, 200, 'Email verified successfully. You can now login.');
+});
+
+/**
  * @desc    Resend email verification link
  * @route   POST /api/v1/auth/resend-verification
  * @access  Public
@@ -341,14 +401,26 @@ exports.resendVerificationEmail = asyncHandler(async (req, res) => {
     return sendError(res, 400, 'This email address is already verified');
   }
 
-  // Generate new verification token
+  const codeUser = await User.findById(user._id)
+    .select('+emailVerificationLastSentAt');
+
+  if (
+    codeUser.emailVerificationLastSentAt
+    && Date.now() - new Date(codeUser.emailVerificationLastSentAt).getTime() < 60 * 1000
+  ) {
+    return sendError(res, 429, 'Please wait before requesting another verification code');
+  }
+
+  // Generate new verification token and code. The token keeps the legacy link
+  // verification path valid, while the email now sends the short code.
   const verificationToken = user.createEmailVerificationToken();
+  const verificationCode = user.createEmailVerificationCode();
   await user.save({ validateBeforeSave: false });
 
   try {
-    await emailService.sendVerificationEmail(user, verificationToken);
-    sendSuccess(res, 200, 'Verification email resent successfully. Please check your inbox.');
+    await emailService.sendVerificationCodeEmail(user, verificationCode);
+    sendSuccess(res, 200, 'Verification code sent successfully. Please check your inbox.');
   } catch (error) {
-    return sendError(res, 500, 'Could not send verification email. Please try again later.');
+    return sendError(res, 500, 'Could not send verification code. Please try again later.');
   }
 });
