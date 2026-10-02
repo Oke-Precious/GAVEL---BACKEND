@@ -870,8 +870,7 @@ RATE_LIMIT_MAX=100</code></pre>
                         <tbody>
                             <tr><td>Netlify</td><td><code>*.netlify.app</code></td><td><code>https://gavel-frontend.netlify.app</code></td></tr>
                             <tr><td>Vercel</td><td><code>*.vercel.app</code></td><td><code>https://gavel-frontend.vercel.app</code></td></tr>
-                            <tr><td>Google Cloud Run</td><td><code>*.run.app</code></td><td><code>https://gavel-frontend-abc123.run.app</code></td></tr>
-                            <tr><td>Cloud Run preview</td><td><code>*-&lt;hash&gt;.a.run.app</code></td><td><code>https://gavel-abc123-uc.a.run.app</code></td></tr>
+                            <tr><td>Google Cloud Run</td><td><code>(any).run.app</code> — any subdomain depth</td><td><code>https://my-app.run.app</code>, <code>https://my-app.europe-west1.run.app</code></td></tr>
                         </tbody>
                     </table>
                 </div>

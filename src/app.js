@@ -30,10 +30,9 @@ const allowedOrigins = [
 
 // Regex patterns for cloud preview/deployment domains
 const allowedOriginPatterns = [
-  /^https:\/\/[\w-]+\.netlify\.app$/,           // Netlify: *.netlify.app
-  /^https:\/\/[\w-]+\.vercel\.app$/,             // Vercel: *.vercel.app
-  /^https:\/\/[\w-]+-[\w-]+\.a\.run\.app$/,      // Cloud Run preview: *-<hash>.a.run.app
-  /^https:\/\/[\w-]+\.run\.app$/,                // Cloud Run custom service URLs: *.run.app
+  /^https:\/\/[\w-]+\.netlify\.app$/,              // Netlify: *.netlify.app
+  /^https:\/\/[\w-]+\.vercel\.app$/,               // Vercel: *.vercel.app
+  /^https:\/\/([\w-]+\.)+run\.app$/,               // Google Cloud Run: *.run.app, *.<region>.run.app, etc.
 ];
 
 app.use(cors({
