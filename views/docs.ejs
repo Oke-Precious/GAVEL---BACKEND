@@ -850,6 +850,7 @@ RATE_LIMIT_MAX=100</code></pre>
             <h2>CORS origins <a class="heading-link" href="#cors" aria-label="Link to CORS origins">#</a></h2>
             <p>The backend accepts requests from <code>CLIENT_URL</code> and the following built-in development origins. Requests without an origin, such as curl, Postman, or native mobile clients, are also accepted.</p>
             <div class="card">
+                <p class="mini-title">Static allowed origins</p>
                 <div class="badge-list">
                     <span class="badge">http://localhost:5173</span>
                     <span class="badge">http://localhost:3000</span>
@@ -859,9 +860,25 @@ RATE_LIMIT_MAX=100</code></pre>
                     <span class="badge">http://127.0.0.1:3000</span>
                     <span class="badge">CLIENT_URL</span>
                 </div>
+                <p class="mini-title">Cloud deployment patterns (auto-matched)</p>
+                <p>These platforms are allowed via regex — no <code>CLIENT_URL</code> update needed for preview or production deployments on these hosts.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Platform</th><th>Pattern</th><th>Example</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Netlify</td><td><code>*.netlify.app</code></td><td><code>https://gavel-frontend.netlify.app</code></td></tr>
+                            <tr><td>Vercel</td><td><code>*.vercel.app</code></td><td><code>https://gavel-frontend.vercel.app</code></td></tr>
+                            <tr><td>Google Cloud Run</td><td><code>*.run.app</code></td><td><code>https://gavel-frontend-abc123.run.app</code></td></tr>
+                            <tr><td>Cloud Run preview</td><td><code>*-&lt;hash&gt;.a.run.app</code></td><td><code>https://gavel-abc123-uc.a.run.app</code></td></tr>
+                        </tbody>
+                    </table>
+                </div>
                 <div class="callout">When <code>NODE_ENV</code> is not <code>production</code>, other origins are permitted for local development.</div>
             </div>
         </section>
+
 
         <section id="auth">
             <h2>1. Authentication <a class="heading-link" href="#auth" aria-label="Link to Authentication">#</a></h2>

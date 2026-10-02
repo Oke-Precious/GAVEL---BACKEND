@@ -28,14 +28,29 @@ const allowedOrigins = [
   'http://127.0.0.1:3000'
 ].filter(Boolean);
 
+// Regex patterns for cloud preview/deployment domains
+const allowedOriginPatterns = [
+  /^https:\/\/[\w-]+\.netlify\.app$/,           // Netlify: *.netlify.app
+  /^https:\/\/[\w-]+\.vercel\.app$/,             // Vercel: *.vercel.app
+  /^https:\/\/[\w-]+-[\w-]+\.a\.run\.app$/,      // Cloud Run preview: *-<hash>.a.run.app
+  /^https:\/\/[\w-]+\.run\.app$/,                // Cloud Run custom service URLs: *.run.app
+];
+
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (e.g. mobile apps, curl, Postman) or matched dev/prod origins
-    if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    // Allow requests with no origin (e.g. mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+
+    // Allow exact matches from the static list
+    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+
+    // Allow pattern-matched cloud deployment domains
+    if (allowedOriginPatterns.some((pattern) => pattern.test(origin))) return callback(null, true);
+
+    // In non-production environments, allow all origins for development convenience
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
+
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true
 }));
